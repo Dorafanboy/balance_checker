@@ -1,0 +1,10 @@
+[
+    {
+        "chainId": 1116,
+        "address": "0xa4151b2b3e269645181dccf2d426ce75fcbdeca9",
+        "name": "Bridged USDC  Core ",
+        "symbol": "USDC",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/34423/thumb/usdc.png?1704857726"
+    }
+]

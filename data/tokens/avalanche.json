@@ -1,0 +1,18 @@
+[
+    {
+        "chainId": 43114,
+        "address": "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7",
+        "name": "Tether",
+        "symbol": "USDT",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/325/thumb/Tether.png?1696501661"
+    },
+    {
+        "chainId": 43114,
+        "address": "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590",
+        "name": "Stargate Finance",
+        "symbol": "STG",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/24413/thumb/STG_LOGO.png?1696523595"
+    }
+]

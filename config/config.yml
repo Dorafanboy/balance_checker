@@ -1,0 +1,49 @@
+server:
+  port: "8080"
+  # host: "localhost"
+
+database:
+  # dsn: "user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+
+logging:
+  level: "debug" # debug, info, warn, error
+  # format: "json" # text, json
+  # output: "stdout" # stdout, stderr, /path/to/logfile
+
+coingecko:
+  api_key: "YOUR_COINGECKO_API_KEY" # Обязательно установите ваш API ключ
+  base_url: "https://api.coingecko.com/api/v3"
+  pro_base_url: "https://pro-api.coingecko.com/api/v3"
+  request_timeout_seconds: 10
+  max_retries: 3
+
+performance:
+  max_parallel_goroutines: 50
+  # http_client_timeout_seconds: 30
+
+# rpc_providers: # Удаляем эту секцию
+#   ethereum: "https://eth.llamarpc.com"
+#   bsc: "https://bsc-dataseed1.binance.org/"
+#   polygon: "https://polygon-rpc.com/"
+
+tracked_networks:
+  - "ethereum"
+  - "bsc"
+  - "polygon"
+  - "arbitrum"
+  - "avalanche"
+  - "base"
+  - "blast"
+  - "celo"
+  - "core"
+  - "fantom"
+  - "gnosis"
+  - "linea"
+  - "manta"
+  - "mantle"
+  - "metis"
+  - "optimism"
+  - "polygon_zkevm"
+  - "scroll"
+  - "zksync"
+  - "zora"

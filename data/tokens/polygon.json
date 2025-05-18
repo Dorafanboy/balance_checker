@@ -1,0 +1,50 @@
+[
+    {
+        "chainId": 137,
+        "address": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+        "name": "Polygon Bridged USDT  Polygon ",
+        "symbol": "USDT",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/35023/thumb/USDT.png?1707233644"
+    },
+    {
+        "chainId": 137,
+        "address": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+        "name": "USDC",
+        "symbol": "USDC",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/6319/thumb/usdc.png?1696506694"
+    },
+    {
+        "chainId": 137,
+        "address": "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590",
+        "name": "Stargate Finance",
+        "symbol": "STG",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/24413/thumb/STG_LOGO.png?1696523595"
+    },
+    {
+        "chainId": 137,
+        "address": "0xe0b52e49357fd4daf2c15e02058dce6bc0057db4",
+        "name": "EURA",
+        "symbol": "EURA",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/19479/thumb/agEUR-4.png?1710726218"
+    },
+    {
+        "chainId": 137,
+        "address": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+        "name": "Bridged USDC  Polygon PoS Bridge ",
+        "symbol": "USDCE",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/33000/thumb/usdc.png?1700119918"
+    },
+    {
+        "chainId": 137,
+        "address": "0x6985884c4392d348587b19cb9eaaf157f13271cd",
+        "name": "LayerZero",
+        "symbol": "ZRO",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/28206/thumb/ftxG9_TJ_400x400.jpeg?1696527208"
+    }
+]

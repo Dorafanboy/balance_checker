@@ -1,0 +1,50 @@
+[
+    {
+        "chainId": 324,
+        "address": "0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4",
+        "name": "zkSync Bridged USDC  zkSync ",
+        "symbol": "USDC",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/35262/thumb/USDC_Icon.png?1708008941"
+    },
+    {
+        "chainId": 324,
+        "address": "0x493257fd37edb34451f62edf8d2a0c418852ba4c",
+        "name": "Bridged USDT",
+        "symbol": "USDT",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/35001/thumb/logo.png?1706959346"
+    },
+    {
+        "chainId": 324,
+        "address": "0x80115c708E12eDd42E504c1cD52Aea96C547c05c",
+        "name": "SyncSwapPool",
+        "symbol": "SSWPOOL",
+        "decimals": 18,
+        "logoURI": ""
+    },
+    {
+        "chainId": 324,
+        "address": "0xcD52cbc975fbB802F82A1F92112b1250b5a997Df",
+        "name": "VelocorePool",
+        "symbol": "VLCRPOOL",
+        "decimals": 18,
+        "logoURI": ""
+    },
+    {
+        "chainId": 324,
+        "address": "0xDFAaB828f5F515E104BaaBa4d8D554DA9096f0e4",
+        "name": "KoiPool",
+        "symbol": "KOIPOOL",
+        "decimals": 18,
+        "logoURI": ""
+    },
+    {
+        "chainId": 324,
+        "address": "0x22D8b71599e14F20a49a397b88c1C878c86F5579",
+        "name": "EraLendPool",
+        "symbol": "ERALENDPOOL",
+        "decimals": 18,
+        "logoURI": ""
+    }
+]

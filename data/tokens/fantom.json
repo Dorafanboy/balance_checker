@@ -1,0 +1,26 @@
+[
+    {
+        "chainId": 250,
+        "address": "0x28a92dde19d9989f39a49905d7c9c2fac7799bdf",
+        "name": "Bridged USD Coin  LayerZero ",
+        "symbol": "LZUSDC",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/31134/thumb/USDC-icon.png?1696529963"
+    },
+    {
+        "chainId": 250,
+        "address": "0xcc1b99ddac1a33c201a742a1851662e87bc7f22c",
+        "name": "Bridged Tether  Stargate ",
+        "symbol": "USDT",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/31185/thumb/anyusdt_32.png?1696530013"
+    },
+    {
+        "chainId": 250,
+        "address": "0x2f6f07cdcf3588944bf4c42ac74ff24bf56e7590",
+        "name": "Stargate Finance",
+        "symbol": "STG",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/24413/thumb/STG_LOGO.png?1696523595"
+    }
+]

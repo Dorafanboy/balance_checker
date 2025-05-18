@@ -1,0 +1,10 @@
+[
+    {
+        "chainId": 42220,
+        "address": "0xc16b81af351ba9e64c1a069e3ab18c244a1e3049",
+        "name": "EURA",
+        "symbol": "EURA",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/19479/thumb/agEUR-4.png?1710726218"
+    }
+]

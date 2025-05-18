@@ -1,0 +1,18 @@
+[
+    {
+        "chainId": 56,
+        "address": "0x55d398326f99059ff775485246999027b3197955",
+        "name": "Binance Bridged USDT  BNB Smart Chain ",
+        "symbol": "BSC-USD",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/35021/thumb/USDT.png?1707233575"
+    },
+    {
+        "chainId": 56,
+        "address": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
+        "name": "Binance Bridged USDC  BNB Smart Chain ",
+        "symbol": "USDC",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/35220/thumb/USDC.jpg?1707919050"
+    }
+]

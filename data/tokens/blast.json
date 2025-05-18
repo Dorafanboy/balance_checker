@@ -1,0 +1,18 @@
+[
+    {
+        "chainId": 81457,
+        "address": "0x51aad5867d73c479ce8c59ae9c9e4bf59d74c4c1",
+        "name": "BlastrPool",
+        "symbol": "BPOOL",
+        "decimals": 18,
+        "logoURI": ""
+    },
+    {
+        "chainId": 81457,
+        "address": "0x4300000000000000000000000000000000000003",
+        "name": "USDB",
+        "symbol": "USDB",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/35595/thumb/65c67f0ebf2f6a1bd0feb13c_usdb-icon-yellow.png?1709255427"
+    }
+]

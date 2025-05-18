@@ -1,0 +1,26 @@
+[
+    {
+        "chainId": 534352,
+        "address": "0xf55bec9cafdbe8730f096aa55dad6d22d44099df",
+        "name": "Bridged Tether  Scroll ",
+        "symbol": "USDT",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/32610/thumb/usdt_%281%29.png?1698733524"
+    },
+    {
+        "chainId": 534352,
+        "address": "0x06efdbff2a14a7c8e15944d1f4a48f9f95f663a4",
+        "name": "Bridged USD Coin  Scroll ",
+        "symbol": "USDC",
+        "decimals": 6,
+        "logoURI": "https://assets.coingecko.com/coins/images/32611/thumb/USDC.png?1698733754"
+    },
+    {
+        "chainId": 534352,
+        "address": "0xca77eb3fefe3725dc33bccb54edefc3d9f764f97",
+        "name": "Dai",
+        "symbol": "DAI",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/9956/thumb/Badge_Dai.png?1696509996"
+    }
+]
