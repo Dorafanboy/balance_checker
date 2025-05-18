@@ -1,0 +1,46 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when run with GOCACHE=off
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Environment variables file
+.env
+
+# IDE-specific files
+.idea/
+.vscode/
+*.iml
+
+# Docker-specific files
+docker-compose.override.yml
+
+# Compiled files
+cmd/checker
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Secrets
+secrets.*
+
+# Config files that might contain secrets
+config/config.local.yml 

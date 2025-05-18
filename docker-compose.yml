@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  parser-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: balance_checker
+    image: checker:latest 
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config/config.yml:/app/config/config.yml:ro 
+    restart: unless-stopped

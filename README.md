@@ -15,7 +15,7 @@ A Go application to check token balances for multiple wallets across various blo
 
 ```
 balance_checker/
-├── cmd/parserapi/main.go       # Main application entry point
+├── cmd/checker/main.go       # Main application entry point
 ├── internal/                   # Internal application code (Clean Architecture)
 │   ├── app/                    # Application layer (use cases, DTOs)
 │   ├── domain/                 # Domain layer (entities, value objects)
@@ -71,7 +71,7 @@ balance_checker/
     # Run database migrations (details musculaire)
 
     # Run the application
-    go run cmd/parserapi/main.go -config=config/config.yml
+    go run cmd/checker/main.go -config=config/config.yml
     ```
 
 ## API Endpoints
