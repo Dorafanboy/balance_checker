@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var globalLogger *slog.Logger // Возвращаем один глобальный логгер
+var globalLogger *slog.Logger
 
 // InitSlog initializes the global slog logger with a specified log level and JSON format.
 func InitSlog(levelStr string) {
@@ -22,24 +22,22 @@ func InitSlog(levelStr string) {
 		parsedLevel = slog.LevelError
 	default:
 		parsedLevel = slog.LevelInfo
-		// Используем slog.Default(), так как globalLogger еще не инициализирован
 		slog.Warn("Invalid log level string, defaulting to INFO", "input", levelStr)
 	}
 
 	opts := &slog.HandlerOptions{
 		Level:     parsedLevel,
-		AddSource: false, // Полностью отключаем вывод источника
+		AddSource: false,
 	}
-	// Используем JSONHandler вместо TextHandler
 	handler := slog.NewJSONHandler(os.Stdout, opts)
 	globalLogger = slog.New(handler)
-	slog.SetDefault(globalLogger) // Устанавливаем как стандартный slog логгер
+	slog.SetDefault(globalLogger)
 }
 
 // ensureInitialized проверяет, инициализирован ли логгер.
 func ensureInitialized() {
 	if globalLogger == nil {
-		InitSlog("INFO") // Initialize with default if not already done
+		InitSlog("INFO")
 	}
 }
 
@@ -78,7 +76,6 @@ func Error(msg string, args ...any) {
 // Fatal logs a message at ErrorLevel then exits.
 func Fatal(msg string, args ...any) {
 	ensureInitialized()
-	// Логируем всегда перед выходом, независимо от Enabled, т.к. это Fatal
-	globalLogger.Error(msg, args...) 
+	globalLogger.Error(msg, args...)
 	os.Exit(1)
 }

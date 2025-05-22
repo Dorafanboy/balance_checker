@@ -11,7 +11,7 @@ info:
     These correspond to the primary identifiers defined in your network configuration.
 
 servers:
-  - url: http://localhost:8080 # Замените порт, если он у вас другой
+  - url: http://localhost:8080 
     description: Local development server
 
 components:
@@ -29,7 +29,7 @@ components:
           example: "USDT"
         decimals:
           type: integer
-          format: int32 # uint8 преобразуется в integer в JSON/YAML
+          format: int32 
           description: Number of decimals the token uses.
           example: 6
         formattedBalance:
@@ -79,7 +79,7 @@ components:
             $ref: "#/components/schemas/NetworkTokens"
           example:
             "Avalanche C-Chain": {
-              "$ref": "#/components/schemas/NetworkTokens" # Пример ссылки, реальные данные будут здесь
+              "$ref": "#/components/schemas/NetworkTokens"
             }
         totalValueUSD:
           type: number
@@ -144,8 +144,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PortfolioError"
-          nullable: true # соответствует omitempty
-        status_message: # имя поля в JSON - status_message
+          nullable: true
+        status_message: 
           type: string
           description: A status message indicating the overall result.
           example: "Portfolios retrieved successfully."
@@ -165,8 +165,6 @@ components:
           description: Number of failed wallets.
           example: 2
 
-  # securitySchemes: {} # Если потребуется аутентификация в будущем
-
 paths:
   /api/v1/portfolios:
     get:
@@ -179,8 +177,7 @@ paths:
           in: query
           description: "Список канонических идентификаторов сетей для фильтрации, разделенных запятыми (например, `ethereum,bsc,avalanche`). Если параметр опущен, будут возвращены данные по всем сетям для всех кошельков (согласно конфигурации)."
           required: false
-          style: form # Для comma-separated строки
-          # explode: false # Оставляем закомментированным или удаляем
+          style: form 
           schema:
             type: string
             example: "ethereum,bsc,avalanche"
@@ -234,8 +231,7 @@ paths:
           in: query
           description: "Список канонических идентификаторов сетей для фильтрации, разделенных запятыми (например, `ethereum,bsc,avalanche`). Если параметр опущен, будут возвращены данные по всем отслеживаемым сетям для данного кошелька."
           required: false
-          style: form # Для comma-separated строки
-          # explode: false # Оставляем закомментированным или удаляем
+          style: form 
           schema:
             type: string
             example: "ethereum,bsc,avalanche"
@@ -287,14 +283,14 @@ paths:
           description: "Канонический идентификатор сети (например, `ethereum`, `bsc`, `avalanche`)."
           schema:
             type: string
-            example: "avalanche" # Пример короткого канонического ID
+            example: "avalanche" 
       responses:
         '200':
           description: Successful retrieval of the wallet's network-specific portfolio.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/APIPortfolioResponse' # Ответ такой же, но data.portfolios[0].balancesByNetwork будет содержать только одну запрошенную сеть
+                $ref: '#/components/schemas/APIPortfolioResponse'
         '404':
           description: Wallet or Network not found, or no data for this combination.
           content:
@@ -304,7 +300,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "wallet with address 0x... not found" # или "data not found for network..."
+                    example: "wallet with address 0x... not found"
         '500':
           description: Internal server error.
           content:

@@ -12,9 +12,9 @@ import (
 type Config struct {
 	Server           ServerConfig            `yaml:"server"`
 	Networks         []NetworkNode           `yaml:"networks"`
-	Tokens           []Token                 `yaml:"tokens"` // This might be deprecated if tokens are fully managed by network files
+	Tokens           []Token                 `yaml:"tokens"`
 	PortfolioService PortfolioServiceConfig  `yaml:"portfolioService"`
-	CoinGecko        CoinGeckoConfig         `yaml:"coinGecko"` // Deprecated
+	CoinGecko        CoinGeckoConfig         `yaml:"coinGecko"`
 	DEXScreener      DEXScreenerConfig       `yaml:"dexScreener"`
 	Logging          LoggingConfig           `yaml:"logging"`
 	Swagger          SwaggerConfig           `yaml:"swagger"`
@@ -34,59 +34,54 @@ type ServerConfig struct {
 // NetworkNode holds the configuration for a specific blockchain network node.
 type NetworkNode struct {
 	ChainID       int64  `yaml:"chainID"`
-	Name          string `yaml:"name"`               // User-friendly name, e.g., "Ethereum Mainnet"
-	DEXScreenerID string `yaml:"dexScreenerChainID"` // Chain ID used by DEX Screener, e.g., "ethereum"
+	Name          string `yaml:"name"`
+	DEXScreenerID string `yaml:"dexScreenerChainID"`
 	Endpoint      string `yaml:"endpoint"`
-	TokensFile    string `yaml:"tokensFile"` // Path to the JSON file containing token list for this network
+	TokensFile    string `yaml:"tokensFile"`
 	RPCTimeoutMs  int64  `yaml:"rpcTimeoutMs"`
-	LimiterPeriod string `yaml:"limiterPeriod"` // e.g., "1s", "1m"
+	LimiterPeriod string `yaml:"limiterPeriod"`
 	LimiterBurst  int    `yaml:"limiterBurst"`
 }
 
 // Token represents a token that can be tracked. This might be deprecated.
-// TODO: Review if this top-level Token config is still needed or if all tokens are defined per network.
 type Token struct {
 	Address string `yaml:"address"`
 	Symbol  string `yaml:"symbol"`
-	ChainID int64  `yaml:"chainID"` // To know which network this token belongs to if defined globally
+	ChainID int64  `yaml:"chainID"`
 }
 
 // PortfolioServiceConfig holds configuration for the PortfolioService.
 type PortfolioServiceConfig struct {
 	UseMock                  bool `yaml:"useMock"`
 	BalanceFetchTimeoutMs    int  `yaml:"balanceFetchTimeoutMs"`
-	MaxConcurrentRequests    int  `yaml:"maxConcurrentRequests"`    // Max concurrent goroutines for fetching balances across all networks for a wallet
-	MaxAddressesPerBatchCall int  `yaml:"maxAddressesPerBatchCall"` // Max addresses in a single batch call
+	MaxConcurrentRequests    int  `yaml:"maxConcurrentRequests"`
+	MaxAddressesPerBatchCall int  `yaml:"maxAddressesPerBatchCall"`
 }
 
 // CoinGeckoConfig holds the configuration for the CoinGecko client.
-// Deprecated: Will be removed or altered after DEXScreener integration.
-// TODO: Review and remove or repurpose after DEXScreener integration is complete.
-// AssetPlatformMapping might be useful for initial mapping to DEXScreener IDs if CoinGecko IDs are known.
 type CoinGeckoConfig struct {
 	BaseURL              string           `yaml:"baseURL"`
 	ApiKey               string           `yaml:"apiKey"`
 	RequestTimeoutMillis int64            `yaml:"requestTimeoutMillis"`
-	AssetPlatformMapping map[int64]string `yaml:"assetPlatformMapping"` // Maps our chainID to CoinGecko platform ID
+	AssetPlatformMapping map[int64]string `yaml:"assetPlatformMapping"`
 }
 
 // DEXScreenerConfig holds the configuration for the DEX Screener client.
 type DEXScreenerConfig struct {
 	BaseURL              string `yaml:"baseURL"`
 	RequestTimeoutMillis int64  `yaml:"requestTimeoutMillis"`
-	// ChainMappings is removed; DEXScreenerChainID is now part of NetworkNode
 }
 
 // LoggingConfig holds the configuration for logging.
 type LoggingConfig struct {
 	Level string `yaml:"level"` // e.g., "debug", "info", "warn", "error"
-	File  string `yaml:"file"`  // Optional: path to log file
+	File  string `yaml:"file"`
 }
 
 // SwaggerConfig holds configuration for Swagger UI.
 type SwaggerConfig struct {
 	Enabled bool   `yaml:"enabled"`
-	Path    string `yaml:"path"` // Path to serve Swagger UI, e.g., "/swagger"
+	Path    string `yaml:"path"`
 }
 
 // CacheConfig holds configuration for caching.
@@ -98,7 +93,7 @@ type CacheConfig struct {
 // RpcClientConfig holds configuration for RPC clients.
 type RpcClientConfig struct {
 	DefaultTimeoutMs    int64 `yaml:"defaultTimeoutMs"`
-	RateLimit           int   `yaml:"rateLimit"` // Requests per second
+	RateLimit           int   `yaml:"rateLimit"`
 	BurstLimit          int   `yaml:"burstLimit"`
 	MaxRetries          int   `yaml:"maxRetries"`
 	RetryDelayMs        int64 `yaml:"retryDelayMs"`
@@ -107,9 +102,9 @@ type RpcClientConfig struct {
 
 // TokenPriceServiceConfig holds configuration for the TokenPriceService.
 type TokenPriceServiceConfig struct {
-	RequestTimeoutMillis     int64 `yaml:"requestTimeoutMillis"`     // Timeout for a single request to the price provider
-	CacheTTLMinutes          int   `yaml:"cacheTTLMinutes"`          // TTL for cached token prices
-	MaxTokensPerBatchRequest int   `yaml:"maxTokensPerBatchRequest"` // Max tokens in a single batch request to price provider (e.g., 30 for DEXScreener)
+	RequestTimeoutMillis     int64 `yaml:"requestTimeoutMillis"`
+	CacheTTLMinutes          int   `yaml:"cacheTTLMinutes"`
+	MaxTokensPerBatchRequest int   `yaml:"maxTokensPerBatchRequest"`
 }
 
 // LoadConfig loads configuration from a YAML file.

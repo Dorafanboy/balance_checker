@@ -12,7 +12,7 @@ import (
 // NetworkDefinitionProvider provides network definitions.
 type NetworkDefinitionProvider struct {
 	logger            port.Logger
-	allNetworkDefs    map[string]entity.NetworkDefinition // Карта для быстрого доступа по Identifier
+	allNetworkDefs    map[string]entity.NetworkDefinition
 	activeNetworkDefs []entity.NetworkDefinition
 }
 
@@ -258,68 +258,51 @@ var ( //nolint:gochecknoglobals // Global for definitions
 		DEXScreenerChainID:        "zora",                                       // From config comments
 		WrappedNativeTokenAddress: "0x4200000000000000000000000000000000000006", // WETH on Zora (стандартный адрес для многих L2)
 	}
-	/* // УДАЛЕНО ZetaChain
-	ZetaChain = entity.NetworkDefinition{
-		ChainID:          7000,
-		Name:             "ZetaChain Mainnet",
-		Identifier:       "zetachain",
-		NativeSymbol:     "ZETA",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://api.mainnet.zetachain.com/evm",
-		FallbackRPCURLs:  []string{},
-		BlockExplorerURL: "https://explorer.mainnet.zetachain.com",
-	}
-	*/
 )
 
 // allKnownDefinitions is a helper to quickly access all hardcoded definitions.
-// It's initialized once.
 var allKnownDefinitions = map[string]entity.NetworkDefinition{
-	Ethereum.Identifier:  Ethereum,
-	BSC.Identifier:       BSC,
-	Polygon.Identifier:   Polygon,
-	Arbitrum.Identifier:  Arbitrum,
-	Avalanche.Identifier: Avalanche,
-	Base.Identifier:      Base,
-	Blast.Identifier:     Blast,
-	Celo.Identifier:      Celo,
-	Core.Identifier:      Core,
-	Fantom.Identifier:    Fantom,
-	Gnosis.Identifier:    Gnosis,
-	Linea.Identifier:     Linea,
-	Manta.Identifier:     Manta,
-	Mantle.Identifier:    Mantle,
-	Metis.Identifier:     Metis,
-	// Mode.Identifier:         Mode, // УДАЛЕНО
+	Ethereum.Identifier:     Ethereum,
+	BSC.Identifier:          BSC,
+	Polygon.Identifier:      Polygon,
+	Arbitrum.Identifier:     Arbitrum,
+	Avalanche.Identifier:    Avalanche,
+	Base.Identifier:         Base,
+	Blast.Identifier:        Blast,
+	Celo.Identifier:         Celo,
+	Core.Identifier:         Core,
+	Fantom.Identifier:       Fantom,
+	Gnosis.Identifier:       Gnosis,
+	Linea.Identifier:        Linea,
+	Manta.Identifier:        Manta,
+	Mantle.Identifier:       Mantle,
+	Metis.Identifier:        Metis,
 	Optimism.Identifier:     Optimism,
 	PolygonZkEVM.Identifier: PolygonZkEVM,
 	Scroll.Identifier:       Scroll,
 	ZkSync.Identifier:       ZkSync,
 	Zora.Identifier:         Zora,
-	// ZetaChain.Identifier:    ZetaChain, // УДАЛЕНО
 }
 
 // NewNetworkDefinitionProvider creates a new NetworkDefinitionProvider.
-// It now scans the tokenDataDir to determine active networks based on the presence of {identifier}.json files.
 func NewNetworkDefinitionProvider(log port.Logger, tokenDataDir string) *NetworkDefinitionProvider {
 	p := &NetworkDefinitionProvider{
 		logger:            log,
-		allNetworkDefs:    allKnownDefinitions, // allKnownDefinitions is a global map with all predefined networks
+		allNetworkDefs:    allKnownDefinitions,
 		activeNetworkDefs: make([]entity.NetworkDefinition, 0),
 	}
 
 	files, err := os.ReadDir(tokenDataDir)
 	if err != nil {
 		p.logger.Error(fmt.Sprintf("Failed to read token data directory: %s", tokenDataDir), "error", err)
-		// Возвращаем пустой провайдер, если не можем прочитать директорию, ошибки будут дальше при попытке получить сети
 		return p
 	}
 
-	activeIdentifiers := make(map[string]struct{}) // Для избежания дубликатов, если вдруг будут не .json файлы с теми же именами
+	activeIdentifiers := make(map[string]struct{})
 
 	for _, file := range files {
 		if file.IsDir() || !strings.HasSuffix(strings.ToLower(file.Name()), ".json") {
-			continue // Пропускаем директории и не JSON файлы
+			continue
 		}
 
 		identifier := strings.TrimSuffix(strings.ToLower(file.Name()), ".json")
@@ -352,18 +335,17 @@ func NewNetworkDefinitionProvider(log port.Logger, tokenDataDir string) *Network
 	return p
 }
 
-// GetNetworkDefinitions returns the list of active (tracked) network definitions.
+// GetAllNetworkDefinitions returns the list of active (tracked) network definitions.
 func (p *NetworkDefinitionProvider) GetAllNetworkDefinitions() []entity.NetworkDefinition {
 	if p == nil {
 		return []entity.NetworkDefinition{}
 	}
-	// Return a copy to prevent external modification
 	defsCopy := make([]entity.NetworkDefinition, len(p.activeNetworkDefs))
 	copy(defsCopy, p.activeNetworkDefs)
 	return defsCopy
 }
 
-// GetNetworkDefinitionByIdentifier returns a specific network definition by its identifier if it's active.
+// GetNetworkDefinitionByName returns a specific network definition by its identifier if it's active.
 func (p *NetworkDefinitionProvider) GetNetworkDefinitionByName(identifier string) (entity.NetworkDefinition, bool) {
 	if p == nil {
 		return entity.NetworkDefinition{}, false
@@ -387,11 +369,10 @@ func (p *NetworkDefinitionProvider) GetNetworkDefinitionByChainID(chainID uint64
 		}
 	}
 
-	// For now, let's iterate allKnownDefinitions if not found in active for this specific function, though it's less efficient.
 	for _, knownDef := range p.allNetworkDefs {
 		if knownDef.ChainID == chainID {
 			p.logger.Warn(fmt.Sprintf("Network with ChainID %d found in all definitions but not in active tracked list.", chainID))
-			return knownDef, true // Or decide if this should return false
+			return knownDef, true
 		}
 	}
 

@@ -3,13 +3,11 @@ package entity
 // DEXTokenPair represents a single trading pair data from DEX Screener.
 type DEXTokenPair struct {
 	SchemaVersion string     `json:"schemaVersion"`
-	Pair          *PairData  `json:"pair"`  // Adjusted based on common single pair responses, if the /tokens/v1 endpoint returns an array of these, the client will handle it.
-	Pairs         []PairData `json:"pairs"` // Used if the endpoint returns multiple pairs, e.g. for a search or by token address
+	Pair          *PairData  `json:"pair"`
+	Pairs         []PairData `json:"pairs"`
 }
 
 // PairData contains detailed information about a trading pair.
-// This structure might be nested if the API returns a single object with a "pair" key,
-// or it might be the direct element in an array if "pairs" key is used.
 type PairData struct {
 	ChainID       string          `json:"chainId"`
 	DexID         string          `json:"dexId"`
@@ -22,11 +20,10 @@ type PairData struct {
 	Txns          PairTxns        `json:"txns"`
 	Volume        PairVolume      `json:"volume"`
 	PriceChange   PairPriceChange `json:"priceChange"`
-	Liquidity     *DEXLiquidity   `json:"liquidity"` // Pointer to handle potential nulls
+	Liquidity     *DEXLiquidity   `json:"liquidity"`
 	Fdv           float64         `json:"fdv"`
 	MarketCap     float64         `json:"marketCap"`
 	PairCreatedAt int64           `json:"pairCreatedAt"`
-	// Info can be more complex, define if needed
 }
 
 // DEXToken represents a token in a trading pair.

@@ -3,7 +3,6 @@ package logger
 import "balance_checker/internal/app/port"
 
 // slogAdapter реализует интерфейс port.Logger, используя глобальные функции пакета logger.
-// Это позволяет передавать конкретную реализацию логгера в сервисы, ожидающие port.Logger.
 type slogAdapter struct{}
 
 // NewSlogAdapter создает новый экземпляр slogAdapter.

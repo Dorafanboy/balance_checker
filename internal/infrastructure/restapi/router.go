@@ -2,25 +2,22 @@ package restapi
 
 import (
 	"github.com/gin-gonic/gin"
-	_ "github.com/json-iterator/go" // ADDED: Import for potential global effects or direct use later
+	_ "github.com/json-iterator/go"
 )
 
 // SetupRouter настраивает и возвращает экземпляр Gin роутера.
-func SetupRouter(portfolioHandler *PortfolioHandler) *gin.Engine {
-	// gin.EnableJsonDecoderUseNumber() // Consider enabling if numbers need to be decoded as json.Number.
-	// For now, let's not enable it unless specifically needed, as it changes how numbers are decoded.
+func SetupRouter(portfolioAPIHandler *PortfolioHandler) *gin.Engine {
+	router := gin.Default()
 
-	router := gin.Default() // Используем gin.Default() для включения стандартных middleware (Logger, Recovery)
-
-	// Группа для API v1
-	v1 := router.Group("/api/v1")
+	apiV1 := router.Group("/api/v1")
 	{
-		v1.GET("/portfolios", portfolioHandler.GetPortfoliosHandler)
-		// Здесь можно будет добавлять другие ручки для v1
-	}
+		apiV1.GET("/portfolios", portfolioAPIHandler.GetPortfoliosHandler)
+		apiV1.GET("/portfolios/failed", portfolioAPIHandler.GetFailedWalletsHandler)
 
-	// Можно добавить и другие группы или ручки верхнего уровня, если потребуется
-	// router.GET("/health", func(c *gin.Context) { c.Status(http.StatusOK) })
+		apiV1.GET("/portfolios/:walletAddress", portfolioAPIHandler.GetSingleWalletPortfolioHandler)
+
+		apiV1.GET("/portfolios/:walletAddress/networks/:networkIdentifier", portfolioAPIHandler.GetSingleWalletNetworkPortfolioHandler)
+	}
 
 	return router
 }

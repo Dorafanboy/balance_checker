@@ -11,19 +11,17 @@ import (
 	"balance_checker/internal/domain/entity"
 	"balance_checker/internal/infrastructure/configloader"
 	"balance_checker/internal/pkg/utils"
-	// httpclient "balance_checker/internal/infrastructure/httpclient" // УДАЛЕНО
 )
 
 // PortfolioServiceImpl implements port.PortfolioService.
 type PortfolioServiceImpl struct {
-	walletProvider  port.WalletProvider
-	networkProvider port.NetworkDefinitionProvider
-	tokenProvider   port.TokenProvider
-	clientProvider  port.BlockchainClientProvider
-	// coinGeckoClient       httpclient.CoinGeckoClient // ЗАМЕНЕНО
-	tokenPriceSvc         port.TokenPriceService // ДОБАВЛЕНО
+	walletProvider        port.WalletProvider
+	networkProvider       port.NetworkDefinitionProvider
+	tokenProvider         port.TokenProvider
+	clientProvider        port.BlockchainClientProvider
+	tokenPriceSvc         port.TokenPriceService
 	logger                port.Logger
-	cfg                   *configloader.Config // ОСТАВЛЕНО для AssetPlatformMapping
+	cfg                   *configloader.Config
 	maxConcurrentRoutines int
 	failedWallets         map[string]bool
 	mu                    sync.Mutex
@@ -35,22 +33,20 @@ func NewPortfolioService(
 	np port.NetworkDefinitionProvider,
 	tp port.TokenProvider,
 	cp port.BlockchainClientProvider,
-	// cgc httpclient.CoinGeckoClient, // ЗАМЕНЕНО
-	tps port.TokenPriceService, // ДОБАВЛЕНО
+	tps port.TokenPriceService,
 	l port.Logger,
 	config *configloader.Config,
 	maxRoutines int,
 ) port.PortfolioService {
 	if maxRoutines <= 0 {
-		maxRoutines = 1 // Ensure at least one routine if configured incorrectly
+		maxRoutines = 1
 	}
 	return &PortfolioServiceImpl{
-		walletProvider:  wp,
-		networkProvider: np,
-		tokenProvider:   tp,
-		clientProvider:  cp,
-		// coinGeckoClient:       cgc, // ЗАМЕНЕНО
-		tokenPriceSvc:         tps, // ДОБАВЛЕНО
+		walletProvider:        wp,
+		networkProvider:       np,
+		tokenProvider:         tp,
+		clientProvider:        cp,
+		tokenPriceSvc:         tps,
 		logger:                l,
 		cfg:                   config,
 		maxConcurrentRoutines: maxRoutines,
@@ -59,7 +55,10 @@ func NewPortfolioService(
 }
 
 // FetchAllWalletsPortfolio fetches portfolios for all wallets defined by the WalletProvider.
-func (s *PortfolioServiceImpl) FetchAllWalletsPortfolio(ctx context.Context, trackedNetworkNames []string) ([]entity.WalletPortfolio, []entity.PortfolioError) {
+func (s *PortfolioServiceImpl) FetchAllWalletsPortfolio(
+	ctx context.Context,
+	trackedNetworkNames []string,
+) ([]entity.WalletPortfolio, []entity.PortfolioError) {
 	s.logger.Debug("Fetching all wallets portfolio", "tracked_networks", trackedNetworkNames)
 	wallets, err := s.walletProvider.GetWallets()
 	if err != nil {
@@ -67,34 +66,33 @@ func (s *PortfolioServiceImpl) FetchAllWalletsPortfolio(ctx context.Context, tra
 		return nil, []entity.PortfolioError{{Message: fmt.Sprintf("failed to load wallets: %v", err)}}
 	}
 
-	var activeNetworkDefinitions []entity.NetworkDefinition // Объявляем заранее
+	var activeNetworkDefinitions []entity.NetworkDefinition
 	if s.networkProvider != nil {
 		allNetworkDefs := s.networkProvider.GetAllNetworkDefinitions()
 
 		if len(trackedNetworkNames) == 0 {
-			activeNetworkDefinitions = allNetworkDefs // Используем все сети от провайдера
-			s.logger.Debug("No specific tracked networks provided, using all networks from NetworkDefinitionProvider.", "count", len(activeNetworkDefinitions))
+			activeNetworkDefinitions = allNetworkDefs
+			s.logger.Debug("No specific tracked networks provided, using all networks from NetworkDefinitionProvider.",
+				"count", len(activeNetworkDefinitions))
 		} else {
-			// Существующая логика фильтрации, если trackedNetworkNames не пуст
-			// Дополнительно приводим имена к нижнему регистру для надежности сравнения
 			filteredDefinitions := make([]entity.NetworkDefinition, 0)
 			trackedSet := make(map[string]bool)
 			for _, name := range trackedNetworkNames {
-				trackedSet[strings.ToLower(name)] = true // Используем ToLower
+				trackedSet[strings.ToLower(name)] = true
 			}
 			for _, netDef := range allNetworkDefs {
-				// Строго используем только netDef.Identifier для сопоставления
-				if trackedSet[strings.ToLower(netDef.Identifier)] { // Используем ToLower
+				if trackedSet[strings.ToLower(netDef.Identifier)] {
 					filteredDefinitions = append(filteredDefinitions, netDef)
 				}
 			}
 			activeNetworkDefinitions = filteredDefinitions
-			s.logger.Debug("Filtered networks based on trackedNetworkNames.", "initial_count", len(allNetworkDefs), "tracked_count", len(trackedNetworkNames), "final_count", len(activeNetworkDefinitions))
+			s.logger.Debug("Filtered networks based on trackedNetworkNames.", "initial_count",
+				len(allNetworkDefs), "tracked_count", len(trackedNetworkNames), "final_count", len(activeNetworkDefinitions))
 		}
 	}
 
 	if len(activeNetworkDefinitions) == 0 {
-		s.logger.Warn("No active networks found to process (either no networks defined by provider or filter mismatch).") // Обновленное сообщение
+		s.logger.Warn("No active networks found to process (either no networks defined by provider or filter mismatch).")
 		return []entity.WalletPortfolio{}, nil
 	}
 	s.logger.Debug("Active networks to process", "count", len(activeNetworkDefinitions))
@@ -145,13 +143,17 @@ func (s *PortfolioServiceImpl) FetchAllWalletsPortfolio(ctx context.Context, tra
 }
 
 // fetchSingleWalletPortfolio fetches the portfolio for a single wallet across specified active networks.
-func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, wallet entity.Wallet, activeNetworks []entity.NetworkDefinition, tokensByChainID map[string][]entity.TokenInfo, networkSemaphore chan struct{}) (entity.WalletPortfolio, []entity.PortfolioError) {
+func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(
+	ctx context.Context,
+	wallet entity.Wallet,
+	activeNetworks []entity.NetworkDefinition,
+	tokensByChainID map[string][]entity.TokenInfo,
+	networkSemaphore chan struct{},
+) (entity.WalletPortfolio, []entity.PortfolioError) {
 	s.logger.Debug("Fetching portfolio for single wallet", "wallet_address", wallet.Address, "active_networks_count", len(activeNetworks))
 
-	// Определяем глобально отслеживаемые символы
 	globallyPricedNativeSymbols := map[string]struct{}{
-		"eth": {}, // Начнем с ETH
-		// Можно добавить "bnb", "matic", "avax", "ftm" позже
+		"eth": {},
 	}
 
 	portfolio := entity.WalletPortfolio{
@@ -162,7 +164,7 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	var overallWalletTotalValueUSD float64 = 0 // Для расчета TotalValueUSD всего кошелька
+	var overallWalletTotalValueUSD float64 = 0
 
 	for _, netDef := range activeNetworks {
 		networkSemaphore <- struct{}{}
@@ -182,7 +184,6 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 			}
 
 			tokensForThisNetwork := tokensByChainID[strconv.FormatUint(nd.ChainID, 10)]
-			// fetchBalancesForNetwork теперь не возвращает цены
 			networkBalances, networkErrors := s.fetchBalancesForNetwork(ctx, wallet, nd, client, tokensForThisNetwork)
 
 			mu.Lock()
@@ -214,7 +215,6 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 					var priceUSD float64
 					var valueUSD float64
 
-					// Определяем, является ли токен нативным
 					isNative := nb.TokenAddress == "" || strings.EqualFold(nb.TokenAddress, entity.ZeroAddress)
 
 					if isNative {
@@ -229,7 +229,6 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 							}
 						}
 
-						// Если цена еще не установлена (из глобального кеша или потому что актив не глобальный)
 						if priceUSD == 0 {
 							if canFetchPrices && nd.WrappedNativeTokenAddress != "" && !strings.EqualFold(nd.WrappedNativeTokenAddress, entity.ZeroAddress) {
 								wrappedAddressLower := strings.ToLower(nd.WrappedNativeTokenAddress)
@@ -244,7 +243,7 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 									if isGloballyPricedAsset {
 										s.tokenPriceSvc.TrySetGlobalNativeTokenPrice(nativeSymbolLower, priceUSD)
 									}
-								} else if !priceFound { // Логируем, только если был WrappedNativeTokenAddress и currentDexscreenerID
+								} else if !priceFound {
 									s.logger.Warn("Price not found or zero for NATIVE asset (via wrapped)",
 										"tokenSymbol", nd.NativeSymbol, "wrappedAddressAttempted", wrappedAddressLower,
 										"network", nd.Name, "dexscreenerID", currentDexscreenerID)
@@ -253,10 +252,8 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 								s.logger.Warn("WrappedNativeTokenAddress is not defined or is zero address for NATIVE asset, cannot fetch price.",
 									"tokenSymbol", nd.NativeSymbol, "network", nd.Name)
 							}
-							// Если !canFetchPrices, лог об этом уже был выше (в начале обработки сети)
 						}
 					} else {
-						// Это ERC20 токен (не нативный)
 						if canFetchPrices {
 							tokenAddressLower := strings.ToLower(nb.TokenAddress)
 							fetchedPrice, priceFound := s.tokenPriceSvc.GetPriceUSD(currentDexscreenerID, tokenAddressLower)
@@ -267,10 +264,10 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 									"tokenSymbol", nb.TokenSymbol, "tokenAddress", tokenAddressLower,
 									"network", nd.Name, "dexscreenerID", currentDexscreenerID)
 							}
-						} // Если !canFetchPrices, цена останется 0, лог уже был
+						}
 					}
 
-					if nb.Amount != nil && priceUSD > 0 { // Рассчитываем, только если есть сумма и цена
+					if nb.Amount != nil && priceUSD > 0 {
 						calculatedValue, errCalc := utils.CalculateValueUSD(nb.Amount, nb.Decimals, priceUSD)
 						if errCalc != nil {
 							s.logger.Error("Failed to calculate valueUSD",
@@ -280,7 +277,6 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 								"raw_amount", nb.Amount.String(),
 								"price", priceUSD,
 								"error", errCalc)
-							// valueUSD остается 0.0, так как она была инициализирована нулем выше
 						} else {
 							valueUSD = calculatedValue
 						}
@@ -289,7 +285,7 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 					td.PriceUSD = priceUSD
 					td.ValueUSD = valueUSD
 					currentTokenDetails = append(currentTokenDetails, td)
-					networkTotalValueUSD += valueUSD // Суммируем стоимость, даже если она 0
+					networkTotalValueUSD += valueUSD
 				}
 
 				if len(currentTokenDetails) > 0 {
@@ -315,20 +311,17 @@ func (s *PortfolioServiceImpl) fetchSingleWalletPortfolio(ctx context.Context, w
 }
 
 // fetchBalancesForNetwork fetches native and token balances for a wallet on a specific network.
-// Цены больше не запрашиваются здесь, только балансы.
 func (s *PortfolioServiceImpl) fetchBalancesForNetwork(
 	ctx context.Context,
 	wallet entity.Wallet,
 	netDef entity.NetworkDefinition,
 	client port.BlockchainClient,
 	tokensForNetwork []entity.TokenInfo,
-) (balances []entity.Balance, errors []entity.PortfolioError) { // Сигнатура изменена
-	s.logger.Debug("Preparing batch balance request (prices are cached)", "wallet", wallet.Address, "network", netDef.Name, "token_count", len(tokensForNetwork))
+) (balances []entity.Balance, errors []entity.PortfolioError) {
+	s.logger.Debug("Preparing batch balance request (prices are cached)", "wallet",
+		wallet.Address, "network", netDef.Name, "token_count", len(tokensForNetwork))
 
 	var balanceRequests []entity.BalanceRequestItem
-	// uniqueContractAddressesForPriceFetch и логика с platformID УДАЛЕНЫ
-
-	// 1. Add native balance request
 	nativeDecimals := netDef.Decimals
 	if nativeDecimals == 0 {
 		nativeDecimals = 18
@@ -341,11 +334,11 @@ func (s *PortfolioServiceImpl) fetchBalancesForNetwork(
 		TokenDecimals: uint8(nativeDecimals),
 	})
 
-	// 2. Add token balance requests
 	for _, token := range tokensForNetwork {
 		if strconv.FormatUint(token.ChainID, 10) != strconv.FormatUint(netDef.ChainID, 10) {
 			s.logger.Warn("Token ChainID mismatch, skipping token in batch preparation",
-				"wallet", wallet.Address, "network", netDef.Name, "token_symbol", token.Symbol, "token_chain_id", token.ChainID, "network_chain_id", netDef.ChainID)
+				"wallet", wallet.Address, "network", netDef.Name, "token_symbol", token.Symbol,
+				"token_chain_id", token.ChainID, "network_chain_id", netDef.ChainID)
 			continue
 		}
 		balanceRequests = append(balanceRequests, entity.BalanceRequestItem{
@@ -356,16 +349,12 @@ func (s *PortfolioServiceImpl) fetchBalancesForNetwork(
 			TokenSymbol:   token.Symbol,
 			TokenDecimals: token.Decimals,
 		})
-		// Сбор адресов для CoinGecko УДАЛЕН
 	}
 
 	if len(balanceRequests) == 0 {
 		s.logger.Debug("No balance requests to send for wallet (prices cached)", "wallet", wallet.Address, "network", netDef.Name)
-		return nil, nil // Сигнатура изменена
+		return nil, nil
 	}
-
-	// Логика вызова CoinGecko УДАЛЕНА
-	// tokenPricesUSD УДАЛЕНА
 
 	s.logger.Debug("Executing batch balance request (prices cached)", "wallet", wallet.Address, "network", netDef.Name, "request_count", len(balanceRequests))
 	batchResults, err := client.GetBalances(ctx, balanceRequests)
@@ -373,7 +362,7 @@ func (s *PortfolioServiceImpl) fetchBalancesForNetwork(
 		s.logger.Error("Batch GetBalances call failed for network (prices cached)", "wallet", wallet.Address, "network", netDef.Name, "error", err)
 		errors = append(errors, entity.PortfolioError{
 			WalletAddress: wallet.Address, NetworkName: netDef.Name, ChainID: strconv.FormatUint(netDef.ChainID, 10), Message: fmt.Sprintf("batch balance fetch failed: %v", err)})
-		return nil, errors // Сигнатура изменена
+		return nil, errors
 	}
 
 	s.logger.Debug("Processing batch balance results (prices cached)", "wallet", wallet.Address, "network", netDef.Name, "result_count", len(batchResults))
@@ -399,7 +388,6 @@ func (s *PortfolioServiceImpl) fetchBalancesForNetwork(
 				IsNative:         resItem.IsNative,
 				Amount:           resItem.Balance,
 				FormattedBalance: resItem.FormattedBalance,
-				// Поля PriceUSD и ValueUSD здесь не нужны, они в TokenDetail
 			})
 		} else {
 			s.logger.Debug("Skipping zero or nil balance from batch result (prices cached)",
@@ -407,7 +395,7 @@ func (s *PortfolioServiceImpl) fetchBalancesForNetwork(
 		}
 	}
 
-	return balances, errors // Сигнатура изменена, pricesUSD больше не возвращается
+	return balances, errors
 }
 
 // GetFailedWallets returns a list of wallet addresses for which fetching failed.
@@ -430,7 +418,7 @@ func (s *PortfolioServiceImpl) FetchSingleWalletPortfolioByAddress(ctx context.C
 	wallet, err := s.walletProvider.GetWalletByAddress(walletAddress)
 	if err != nil {
 		s.logger.Warn("Wallet not found by address", "address", walletAddress, "error", err)
-		return nil, nil, fmt.Errorf("wallet with address %s not found", walletAddress) // Возвращаем ошибку типа "не найдено"
+		return nil, nil, fmt.Errorf("wallet with address %s not found", walletAddress)
 	}
 
 	var activeNetworkDefinitions []entity.NetworkDefinition
@@ -446,7 +434,6 @@ func (s *PortfolioServiceImpl) FetchSingleWalletPortfolioByAddress(ctx context.C
 				trackedSet[strings.ToLower(name)] = true
 			}
 			for _, netDef := range allNetworkDefs {
-				// Строго используем только netDef.Identifier для сопоставления
 				if trackedSet[strings.ToLower(netDef.Identifier)] {
 					filteredDefinitions = append(filteredDefinitions, netDef)
 				}
@@ -468,10 +455,7 @@ func (s *PortfolioServiceImpl) FetchSingleWalletPortfolioByAddress(ctx context.C
 		return nil, nil, fmt.Errorf("failed to load tokens for wallet %s: %w", walletAddress, err)
 	}
 
-	// Создаем семафор для s.fetchSingleWalletPortfolio.
-	// s.fetchSingleWalletPortfolio использует его для ограничения горутин по сетям.
-	// Так как здесь мы обрабатываем только один кошелек, но s.fetchSingleWalletPortfolio все еще может параллельно обрабатывать сети для этого кошелька.
-	networkSemaphore := make(chan struct{}, s.maxConcurrentRoutines) // Используем тот же лимит, что и для FetchAllWalletsPortfolio
+	networkSemaphore := make(chan struct{}, s.maxConcurrentRoutines)
 
 	walletPortfolioResult, singleWalletErrors := s.fetchSingleWalletPortfolio(ctx, *wallet, activeNetworkDefinitions, tokensByChainID, networkSemaphore)
 

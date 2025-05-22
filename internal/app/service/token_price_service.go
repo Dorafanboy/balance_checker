@@ -1,18 +1,18 @@
 package service
 
 import (
-	"balance_checker/internal/infrastructure/httpclient"
 	"context"
+	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
 	"balance_checker/internal/app/port"
 	"balance_checker/internal/domain/entity"
-	dex_types "balance_checker/internal/entity"            // Импорт для типов DEXScreener
-	"balance_checker/internal/infrastructure/configloader" // Импорт для config.Config
-	"balance_checker/internal/pkg/utils"                   // Для BatchStrings и SafeDerefFloat64
-	"fmt"
-	"strconv" // Для ParseFloat
+	dex_types "balance_checker/internal/entity"
+	"balance_checker/internal/infrastructure/configloader"
+	"balance_checker/internal/infrastructure/httpclient"
+	"balance_checker/internal/pkg/utils"
 
 	"go.uber.org/zap"
 )
@@ -31,17 +31,16 @@ var stablecoinSymbols = map[string]struct{}{
 
 // tokenPriceServiceImpl implements port.TokenPriceService
 type tokenPriceServiceImpl struct {
-	tokenProvider   port.TokenProvider
-	networkProvider port.NetworkDefinitionProvider
-	// coinGeckoClient   httpclient.CoinGeckoClient // Закомментировано, т.к. используем DEXScreener
+	tokenProvider     port.TokenProvider
+	networkProvider   port.NetworkDefinitionProvider
 	dexscreenerClient httpclient.DEXScreenerClient
 	logger            port.Logger
 	cfg               *configloader.Config
-	cachedPrices      map[string]map[string]float64 // platformID (CoinGecko) -> contractAddress (lower) -> price
+	cachedPrices      map[string]map[string]float64
 	mu                sync.RWMutex
 
-	globalNativePrices   map[string]float64 // Ключ: символ нативного токена (в нижнем регистре, например, "eth"), Значение: цена USD
-	globalNativePricesMu sync.RWMutex       // Мьютекс для потокобезопасного доступа к globalNativePrices
+	globalNativePrices   map[string]float64
+	globalNativePricesMu sync.RWMutex
 }
 
 // NewTokenPriceService creates a new instance of tokenPriceServiceImpl.
@@ -59,7 +58,7 @@ func NewTokenPriceService(
 		logger:             l,
 		cfg:                config,
 		cachedPrices:       make(map[string]map[string]float64),
-		globalNativePrices: make(map[string]float64), // Инициализация новой мапы
+		globalNativePrices: make(map[string]float64),
 	}
 	l.Info("TokenPriceService успешно инициализирован.")
 	return s
@@ -75,7 +74,7 @@ func (s *tokenPriceServiceImpl) GetGlobalNativeTokenPrice(nativeSymbolLower stri
 
 // TrySetGlobalNativeTokenPrice пытается установить цену для глобально отслеживаемого нативного токена.
 func (s *tokenPriceServiceImpl) TrySetGlobalNativeTokenPrice(nativeSymbolLower string, price float64) {
-	if price <= 0 { // Не кешируем нулевые или отрицательные цены
+	if price <= 0 {
 		s.logger.Debug("Attempted to cache zero or negative global native price, skipping.", "symbol", nativeSymbolLower, "price", price)
 		return
 	}
@@ -96,8 +95,6 @@ func (s *tokenPriceServiceImpl) LoadAndCacheTokenPrices(ctx context.Context) err
 		return nil
 	}
 
-	// Загружаем все токены для всех активных сетей ОДИН РАЗ
-	// ИСПРАВЛЕНО: Передаем activeNetworksForPriceFetching в GetTokensByNetwork, как ожидает интерфейс
 	allTokensByChainID, err := s.tokenProvider.GetTokensByNetwork(activeNetworksForPriceFetching)
 	if err != nil {
 		s.logger.Error("Failed to get all tokens by network from tokenProvider", "error", err)
@@ -105,16 +102,15 @@ func (s *tokenPriceServiceImpl) LoadAndCacheTokenPrices(ctx context.Context) err
 	}
 
 	var processedSuccessfully, failedOrMissing int
-	platformsWithCachedPrices := make(map[string]struct{}) // Для подсчета уникальных платформ с ценами
+	platformsWithCachedPrices := make(map[string]struct{})
 
-	concurrencyLimit := 5                                            // Пример
-	if s.cfg != nil && s.cfg.Performance.MaxConcurrentRoutines > 0 { // ИСПРАВЛЕНО: MaxConcurrentRoutines
+	concurrencyLimit := 5
+	if s.cfg != nil && s.cfg.Performance.MaxConcurrentRoutines > 0 {
 		concurrencyLimit = s.cfg.Performance.MaxConcurrentRoutines
 	}
 	sem := make(chan struct{}, concurrencyLimit)
 	var wg sync.WaitGroup
 
-	// Предварительная инициализация внутренних карт в s.cachedPrices под блокировкой
 	s.mu.Lock()
 	for _, netDef := range activeNetworksForPriceFetching {
 		dexID := netDef.DEXScreenerChainID
@@ -127,10 +123,7 @@ func (s *tokenPriceServiceImpl) LoadAndCacheTokenPrices(ctx context.Context) err
 	s.mu.Unlock()
 
 	for _, netDef := range activeNetworksForPriceFetching {
-		// Получаем DEXScreenerID напрямую из netDef
 		currentDexScreenerID := netDef.DEXScreenerChainID
-		// CoinGecko Platform ID нам больше не нужен здесь, если DEXScreener основной
-		// currentCoinGeckoPlatformID := netDef.CoinGeckoPlatformID // Если бы он был в netDef
 
 		if currentDexScreenerID == "" {
 			s.logger.Warn("DEXScreenerChainID not defined for network, skipping price fetch for its tokens", "network_name", netDef.Name, "network_identifier", netDef.Identifier)
@@ -145,8 +138,6 @@ func (s *tokenPriceServiceImpl) LoadAndCacheTokenPrices(ctx context.Context) err
 
 		s.logger.Info("Fetching prices for DEXScreener chain", "dexScreenerID", currentDexScreenerID, "tokenCount", len(tokensForThisNetwork))
 
-		// ИСПРАВЛЕНО: используем s.cfg.TokenPriceSvc.MaxTokensPerBatchRequest
-		// ИСПРАВЛЕНО: вызываем s.batchTokenInfos (переименовал для ясности)
 		batches := s.batchTokenInfos(tokensForThisNetwork, s.cfg.TokenPriceSvc.MaxTokensPerBatchRequest)
 
 		for _, batch := range batches {
@@ -171,11 +162,10 @@ func (s *tokenPriceServiceImpl) LoadAndCacheTokenPrices(ctx context.Context) err
 						"dexScreenerID", dexscreenerID,
 						"token_addresses_count", len(tokenAddresses),
 						"error", err)
-					failedOrMissing += len(batch) // Считаем все токены из батча как неудачные
+					failedOrMissing += len(batch)
 					return
 				}
 
-				// Обработка полученных пар
 				foundPricesForBatch := 0
 				for _, tokenInfo := range batch {
 					foundPair := false
@@ -189,10 +179,9 @@ func (s *tokenPriceServiceImpl) LoadAndCacheTokenPrices(ctx context.Context) err
 									"price_string", pair.PriceUsd,
 									"error", errConv)
 								failedOrMissing++
-								continue // к следующей паре или токену
+								continue
 							}
 
-							// Потокобезопасная запись в кеш
 							s.mu.Lock()
 							s.cachedPrices[dexscreenerID][strings.ToLower(tokenInfo.Address)] = price
 							s.mu.Unlock()
@@ -205,7 +194,7 @@ func (s *tokenPriceServiceImpl) LoadAndCacheTokenPrices(ctx context.Context) err
 							foundPricesForBatch++
 							platformsWithCachedPrices[dexscreenerID] = struct{}{}
 							foundPair = true
-							break // Нашли пару для этого tokenInfo, переходим к следующему tokenInfo
+							break
 						}
 					}
 					if !foundPair {
@@ -238,7 +227,7 @@ func (s *tokenPriceServiceImpl) selectBestPriceFromPairs(pairs []dex_types.PairD
 	var bestStablecoinPair *dex_types.PairData
 
 	for i := range pairs {
-		pair := &pairs[i] // Работаем с указателем для модификации или сравнения
+		pair := &pairs[i]
 		if !strings.EqualFold(pair.BaseToken.Address, baseTokenAddress) {
 			continue
 		}
@@ -263,7 +252,7 @@ func (s *tokenPriceServiceImpl) selectBestPriceFromPairs(pairs []dex_types.PairD
 			"baseTokenAddress", baseTokenAddress,
 			"pairAddress", bestStablecoinPair.PairAddress,
 			"priceUsd", bestStablecoinPair.PriceUsd,
-			"liquidityUsd", utils.SafeDerefFloat64(bestStablecoinPair.Liquidity, func(l dex_types.DEXLiquidity) float64 { return l.Usd }), // Убедитесь, что entity.DEXLiquidity такое же
+			"liquidityUsd", utils.SafeDerefFloat64(bestStablecoinPair.Liquidity, func(l dex_types.DEXLiquidity) float64 { return l.Usd }),
 			"quoteToken", bestStablecoinPair.QuoteToken.Symbol)
 		return bestStablecoinPair.PriceUsd
 	}
@@ -285,12 +274,11 @@ func (s *tokenPriceServiceImpl) selectBestPriceFromPairs(pairs []dex_types.PairD
 }
 
 // GetPriceUSD реализует port.TokenPriceService и возвращает цену токена из кеша.
-// Ранее назывался GetTokenPrice, переименован для соответствия интерфейсу.
 func (s *tokenPriceServiceImpl) GetPriceUSD(dexScreenerChainID string, tokenAddress string) (float64, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if chainPrices, ok := s.cachedPrices[dexScreenerChainID]; ok { // Используем dexScreenerChainID как ключ первого уровня
+	if chainPrices, ok := s.cachedPrices[dexScreenerChainID]; ok {
 		price, found := chainPrices[strings.ToLower(tokenAddress)]
 		return price, found
 	}
@@ -302,7 +290,6 @@ func (s *tokenPriceServiceImpl) GetAllTokenPrices() map[string]map[string]float6
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// Возвращаем копию, чтобы избежать внешних модификаций
 	pricesCopy := make(map[string]map[string]float64)
 	for platform, addrMap := range s.cachedPrices {
 		pricesCopy[platform] = make(map[string]float64)
@@ -314,11 +301,10 @@ func (s *tokenPriceServiceImpl) GetAllTokenPrices() map[string]map[string]float6
 }
 
 // Вспомогательная функция для разделения среза токенов на батчи
-// Перемещена или создана здесь для ясности, т.к. utils.BatchStrings может быть для другого типа
 func (s *tokenPriceServiceImpl) batchTokenInfos(tokens []entity.TokenInfo, batchSize int) [][]entity.TokenInfo {
 	var batches [][]entity.TokenInfo
 	if batchSize <= 0 {
-		batchSize = 30 // Default batch size (DEXScreener limit)
+		batchSize = 30
 	}
 
 	for i := 0; i < len(tokens); i += batchSize {
@@ -330,6 +316,3 @@ func (s *tokenPriceServiceImpl) batchTokenInfos(tokens []entity.TokenInfo, batch
 	}
 	return batches
 }
-
-// GetTokenPrice_V2 attempts to retrieve a token's price, first from cache, then from CoinGecko (if configured).
-// ... existing code ...

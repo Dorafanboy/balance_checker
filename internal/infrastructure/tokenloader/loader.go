@@ -10,8 +10,6 @@ import (
 
 	"balance_checker/internal/app/port"
 	"balance_checker/internal/domain/entity"
-	// infraDef "balance_checker/internal/infrastructure/network/definition" // Не используется напрямую в этой реализации,
-	// так как activeNetworkDefs уже типа []entity.NetworkDefinition
 )
 
 const defaultTokenDirectoryPath = "data/tokens"
@@ -33,9 +31,6 @@ func NewTokenLoader(loggerInfo func(msg string, args ...any), loggerWarn func(ms
 }
 
 // GetTokensByNetwork scans the tokenDir, reads JSON files for active networks,
-// parses them into TokenInfo slices, and validates chain IDs.
-// Возвращает map[string][]entity.TokenInfo, где ключ - это ChainID сети в виде строки.
-// Метод LoadAndCacheTokens, который был в main.go, теперь инкапсулирован здесь и в PortfolioService.
 func (l *TokenFileLoader) GetTokensByNetwork(activeNetworkDefs []entity.NetworkDefinition) (map[string][]entity.TokenInfo, error) {
 	tokensByChainID := make(map[string][]entity.TokenInfo)
 
@@ -44,15 +39,12 @@ func (l *TokenFileLoader) GetTokensByNetwork(activeNetworkDefs []entity.NetworkD
 		if l.loggerWarn != nil {
 			l.loggerWarn("Failed to read token directory, no tokens will be loaded", "path", l.tokenDirPath, "error", err)
 		}
-		// Не возвращаем ошибку, если директория не существует, просто не будет токенов
-		// Однако, если директория указана, но не читается, это проблема.
-		// Для согласованности с предыдущей логикой, вернем ошибку.
 		return nil, fmt.Errorf("failed to read token directory %s: %w", l.tokenDirPath, err)
 	}
 
 	activeNetworksMap := make(map[string]entity.NetworkDefinition)
 	for _, netDef := range activeNetworkDefs {
-		activeNetworksMap[netDef.Identifier] = netDef // Ключ - Identifier (например, "ethereum")
+		activeNetworksMap[netDef.Identifier] = netDef
 	}
 
 	foundAnyTokenFiles := false
@@ -78,8 +70,6 @@ func (l *TokenFileLoader) GetTokensByNetwork(activeNetworkDefs []entity.NetworkD
 			if l.loggerWarn != nil {
 				l.loggerWarn("Failed to read token file, skipping file.", "path", filePath, "error", err)
 			}
-			// Решаем не делать это фатальной ошибкой для всего процесса загрузки токенов, пропускаем битый файл.
-			// Если требуется строгая проверка, здесь можно вернуть ошибку.
 			continue
 		}
 

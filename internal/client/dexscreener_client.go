@@ -15,18 +15,8 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-const (
-	dexScreenerBaseURL = "https://api.dexscreener.com/api/v1"
-	// tokenPairsByAddressPath = "/tokens/v1/%s/%s" // Старый путь с ошибкой
-	tokenPairsByAddressPath = "/tokens/%s/%s" // ИСПРАВЛЕНО: Удален лишний /v1
-)
-
 // DEXScreenerClient defines the interface for interacting with the DEX Screener API.
 type DEXScreenerClient interface {
-	// GetTokenPairsByAddresses fetches pair data for a list of token addresses on a specific chain.
-	// It expects the dexscreenerChainID (e.g., "ethereum", "bsc") and a slice of token contract addresses.
-	// Returns a slice of PairData entities, where each PairData corresponds to a trading pair associated with one of the requested tokens.
-	// A single requested token might result in multiple PairData items if it's part of multiple pairs.
 	GetTokenPairsByAddresses(ctx context.Context, dexscreenerChainID string, tokenAddresses []string) ([]entity.PairData, error)
 }
 
@@ -36,7 +26,7 @@ type dexScreenerClientImpl struct {
 	baseURL             string
 	timeout             time.Duration
 	logger              *zap.Logger
-	maxTokensPerRequest int // Max tokens per single API call (e.g., 30 for DEXScreener)
+	maxTokensPerRequest int
 }
 
 // NewDEXScreenerClient creates a new instance of dexScreenerClientImpl.
