@@ -2,7 +2,6 @@ package port
 
 import (
 	"context"
-	"math/big"
 
 	"balance_checker/internal/domain/entity"
 )
@@ -10,11 +9,11 @@ import (
 // BlockchainClient defines the interface for interacting with a blockchain network.
 // Implementations will be specific to network types (e.g., EVM, Solana).
 type BlockchainClient interface {
-	// GetNativeBalance fetches the native currency balance (e.g., ETH, BNB) for a wallet.
-	GetNativeBalance(ctx context.Context, walletAddress string) (*big.Int, error)
-
-	// GetTokenBalance fetches the balance of a specific token for a wallet.
-	GetTokenBalance(ctx context.Context, tokenAddress string, walletAddress string) (*big.Int, error)
+	// GetBalances fetches multiple balances (native and token) for a wallet in a single batch operation if possible.
+	// It takes a slice of BalanceRequestItem and returns a corresponding slice of BalanceResultItem.
+	// An error can be returned if the entire batch operation fails at a high level.
+	// Individual errors for sub-requests should be populated in the Error field of BalanceResultItem.
+	GetBalances(ctx context.Context, requests []entity.BalanceRequestItem) ([]entity.BalanceResultItem, error)
 
 	// Definition returns the network definition associated with this client.
 	Definition() entity.NetworkDefinition

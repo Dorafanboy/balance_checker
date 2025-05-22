@@ -65,3 +65,30 @@ func (l *WalletFileLoader) GetWallets() ([]entity.Wallet, error) {
 	}
 	return wallets, nil
 }
+
+// GetWalletByAddress searches for a wallet by its address in the file.
+// It performs a case-insensitive search.
+func (l *WalletFileLoader) GetWalletByAddress(address string) (*entity.Wallet, error) {
+	// Этот метод будет заново читать файл каждый раз, что может быть неэффективно
+	// для частых вызовов. Однако, для простоты и консистентности с GetWallets,
+	// пока оставим так. Для оптимизации можно было бы кешировать кошельки при первой загрузке.
+	wallets, err := l.GetWallets() // Используем существующий метод для загрузки
+	if err != nil {
+		// Логгер уже используется внутри GetWallets, так что здесь можно не дублировать, если только для контекста поиска
+		return nil, fmt.Errorf("failed to load wallets when searching by address '%s': %w", address, err)
+	}
+
+	for _, wallet := range wallets {
+		if strings.EqualFold(wallet.Address, address) {
+			if l.loggerInfo != nil {
+				l.loggerInfo("Wallet found by address", "address", address, "path", l.filePath)
+			}
+			return &wallet, nil // Возвращаем указатель на элемент (копию из среза wallets)
+		}
+	}
+
+	if l.loggerInfo != nil {
+		l.loggerInfo("Wallet not found by address", "address", address, "path", l.filePath)
+	}
+	return nil, fmt.Errorf("wallet with address %s not found in %s", address, l.filePath)
+}

@@ -6,29 +6,57 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"balance_checker/internal/app/port"
 	"balance_checker/internal/domain/entity"
+	"balance_checker/internal/pkg/utils"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // EVMClient implements the port.BlockchainClient interface for EVM-compatible chains.
-
-// EVMClient implements the port.BlockchainClient interface for EVM-compatible chains.
 type EVMClient struct {
-	ethClient *ethclient.Client
-	netDef    entity.NetworkDefinition
+	ethClient      *ethclient.Client
+	netDef         entity.NetworkDefinition
+	rpcCallTimeout time.Duration // ADDED: Timeout for RPC calls
 	// logger    port.Logger // Optional: if specific logging per client is needed
+}
+
+// ERC20 ABI minimal part for balanceOf
+const erc20ABI = `[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]`
+
+var (
+	parsedERC20ABI  abi.ABI
+	parsedERC20Once sync.Once
+	erc20MethodID   []byte
+)
+
+func initParsedERC20ABI() {
+	parsedERC20Once.Do(func() {
+		var err error
+		parsedERC20ABI, err = abi.JSON(strings.NewReader(erc20ABI))
+		if err != nil {
+			// This is a critical error during initialization, panic is appropriate
+			panic(fmt.Sprintf("failed to parse ERC20 ABI: %v", err))
+		}
+		balanceOfMethod, ok := parsedERC20ABI.Methods["balanceOf"]
+		if !ok {
+			panic("balanceOf method not found in parsed ERC20 ABI")
+		}
+		erc20MethodID = balanceOfMethod.ID
+	})
 }
 
 // NewEVMClient creates a new EVM client for the given network definition.
 // It tries to connect to the primary RPC URL, then fallbacks if necessary.
-func NewEVMClient(netDef entity.NetworkDefinition, httpClient *http.Client, connectionTimeout time.Duration) (port.BlockchainClient, error) {
+func NewEVMClient(netDef entity.NetworkDefinition, httpClient *http.Client, connectionTimeout time.Duration, rpcCallTimeout time.Duration) (port.BlockchainClient, error) {
+	initParsedERC20ABI() // Ensure ABI is parsed
 	rpcURLs := append([]string{netDef.PrimaryRPCURL}, netDef.FallbackRPCURLs...)
 	var lastErr error
 
@@ -63,7 +91,7 @@ func NewEVMClient(netDef entity.NetworkDefinition, httpClient *http.Client, conn
 			// currentChainID, chainErr := client.ChainID(context.Background())
 			// if chainErr != nil { lastErr = fmt.Errorf("failed to verify chainID for %s: %w", rpcURL, chainErr); continue }
 			// if currentChainID.Uint64() != netDef.ChainID { lastErr = fmt.Errorf("chainID mismatch for %s: expected %d, got %d", rpcURL, netDef.ChainID, currentChainID.Uint64()); continue }
-			return &EVMClient{ethClient: client, netDef: netDef}, nil
+			return &EVMClient{ethClient: client, netDef: netDef, rpcCallTimeout: rpcCallTimeout}, nil
 		}
 		lastErr = fmt.Errorf("failed to connect to RPC %s: %w", rpcURL, err)
 		// logger.L().Warn("Failed to connect to RPC, trying next", "url", rpcURL, "error", err)
@@ -72,87 +100,136 @@ func NewEVMClient(netDef entity.NetworkDefinition, httpClient *http.Client, conn
 	return nil, fmt.Errorf("all RPC connection attempts failed for network %s: %w", netDef.Name, lastErr)
 }
 
-// GetNativeBalance fetches the native currency balance (e.g., ETH, BNB) for a wallet.
-func (c *EVMClient) GetNativeBalance(ctx context.Context, walletAddress string) (*big.Int, error) {
-	address := common.HexToAddress(walletAddress)
-	balance, err := c.ethClient.BalanceAt(ctx, address, nil) // nil for latest block
-	if err != nil {
-		return nil, fmt.Errorf("failed to get native balance for %s on %s: %w", walletAddress, c.netDef.Name, err)
-	}
-	return balance, nil
-}
-
-// ERC20 ABI minimal part for balanceOf
-const erc20ABI = `[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}, {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
-
-// GetTokenBalance fetches the balance of an ERC20 token for a wallet.
-// This is a simplified version. For full ERC20 interaction, use abigen.
-func (c *EVMClient) GetTokenBalance(ctx context.Context, tokenAddressHex string, walletAddressHex string) (*big.Int, error) {
-	tokenAddress := common.HexToAddress(tokenAddressHex)
-	walletAddress := common.HexToAddress(walletAddressHex)
-
-	// A generic way to call a view function on a contract
-	// For `balanceOf(address)(uint256)`
-	// Method ID for balanceOf(address) is 0x70a08231
-	// Data: methodID + padded walletAddress
-	methodID := []byte{0x70, 0xa0, 0x82, 0x31} // Method ID of balanceOf(address)
-	paddedAddress := common.LeftPadBytes(walletAddress.Bytes(), 32)
-	var calldata []byte
-	calldata = append(calldata, methodID...)
-	calldata = append(calldata, paddedAddress...)
-
-	// Using bind.BoundContract for a slightly more structured call than raw CallContract
-	// This requires a more complete ABI definition or a pre-generated binding.
-	// For simplicity and directness, let's use a more direct CallContract approach if not using abigen.
-	// However, for a real project, using abigen to generate token bindings is highly recommended.
-
-	// Let's use an instance of a generic ERC20 contract structure for balanceOf
-	// This would typically be generated by abigen from an ERC20 ABI.
-	// For now, we will simulate this by manually crafting the call or using a minimal binding.
-
-	// We need a generic ERC20 contract instance. This is where abigen helps.
-	// A simplified example for `balanceOf` might look like this if we had a helper:
-	// tokenContract, err := erc20.NewErc20(tokenAddress, c.ethClient) // Assuming erc20 is your abigen generated package
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to instantiate ERC20 contract %s: %w", tokenAddressHex, err)
-	// }
-	// balance, err := tokenContract.BalanceOf(&bind.CallOpts{Context: ctx}, walletAddress)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get token balance for %s (token %s) on %s: %w", walletAddressHex, tokenAddressHex, c.netDef.Name, err)
-	// }
-	// return balance, nil
-
-	// Fallback to a more manual CallContract if abigen isn't set up yet for this step.
-	// This is more complex to get right for all cases and return types.
-	// A better approach without full abigen is to use a helper that parses a minimal ABI string.
-
-	// For demonstration, let's assume we're using a simplified caller or a pre-generated one later.
-	// This part will be placeholder for now and needs proper ERC20 interaction code.
-	// The recommended way is to use `abigen` to generate Go bindings for the ERC20 contract.
-	// Then you can call: instance, err := NewYourTokenContract(tokenAddress, c.ethClient)
-	// balance, err := instance.BalanceOf(nil, walletAddress)
-
-	// Using the generic contract call pattern if abigen is not used.
-	// This is more low-level and error-prone than abigen.
-	// We will use `bind.NewBoundContract` with a parsed ABI snippet.
-
-	parsedAbi, err := abi.JSON(strings.NewReader(erc20ABI))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse ERC20 ABI: %w", err)
-	}
-	contract := bind.NewBoundContract(tokenAddress, parsedAbi, c.ethClient, c.ethClient, c.ethClient)
-
-	var out []interface{}
-	err = contract.Call(&bind.CallOpts{Context: ctx}, &out, "balanceOf", walletAddress)
-	if err != nil {
-		return nil, fmt.Errorf("failed to call balanceOf for token %s on wallet %s network %s: %w", tokenAddressHex, walletAddressHex, c.netDef.Name, err)
+// GetBalances fetches multiple balances using JSON-RPC batch requests.
+func (c *EVMClient) GetBalances(ctx context.Context, requests []entity.BalanceRequestItem) ([]entity.BalanceResultItem, error) {
+	if len(requests) == 0 {
+		return []entity.BalanceResultItem{}, nil
 	}
 
-	balance, ok := out[0].(*big.Int)
-	if !ok {
-		return nil, fmt.Errorf("failed to assert type of balanceOf output to *big.Int for token %s", tokenAddressHex)
+	batchElems := make([]rpc.BatchElem, len(requests))
+	results := make([]entity.BalanceResultItem, len(requests))
+
+	for i, reqItem := range requests {
+		// Pre-fill result item with request data
+		results[i] = entity.BalanceResultItem{
+			RequestID:     reqItem.ID,
+			WalletAddress: reqItem.WalletAddress,
+			TokenAddress:  reqItem.TokenAddress,
+			TokenSymbol:   reqItem.TokenSymbol,
+			Decimals:      reqItem.TokenDecimals,
+			IsNative:      reqItem.Type == entity.NativeBalanceRequest,
+			// NetworkName and ChainID will be filled by the service layer if needed,
+			// or can be taken from c.netDef here. For now, keep it simple.
+		}
+
+		switch reqItem.Type {
+		case entity.NativeBalanceRequest:
+			batchElems[i] = rpc.BatchElem{
+				Method: "eth_getBalance",
+				Args:   []interface{}{common.HexToAddress(reqItem.WalletAddress), "latest"},
+				Result: new(*hexutil.Big), // eth_getBalance returns hexutil.Big
+			}
+		case entity.TokenBalanceRequest:
+			paddedWalletAddress := common.LeftPadBytes(common.HexToAddress(reqItem.WalletAddress).Bytes(), 32)
+			callData := append(erc20MethodID, paddedWalletAddress...)
+
+			// Arguments for eth_call: [{to: tokenAddress, data: callData}, "latest"]
+			callArgs := map[string]interface{}{
+				"to":   common.HexToAddress(reqItem.TokenAddress),
+				"data": hexutil.Bytes(callData),
+			}
+			batchElems[i] = rpc.BatchElem{
+				Method: "eth_call",
+				Args:   []interface{}{callArgs, "latest"},
+				Result: new(hexutil.Bytes),
+			}
+		default:
+			results[i].Error = fmt.Errorf("unknown balance request type: %v for %s", reqItem.Type, reqItem.TokenSymbol)
+		}
 	}
-	return balance, nil
+
+	rawRPCClient := c.ethClient.Client()
+
+	// Define a timeout for the RPC batch call itself
+	// This is in addition to the connection timeout handled during NewEVMClient
+	rpcCallCtx, cancel := context.WithTimeout(ctx, c.rpcCallTimeout)
+	defer cancel()
+
+	if err := rawRPCClient.BatchCallContext(rpcCallCtx, batchElems); err != nil {
+		// This is a high-level error for the entire batch (e.g., network issue, server error)
+		// Individual errors are in batchElems[i].Error
+		// We will still process individual errors below, but this indicates a wider problem.
+		// For now, let's return this error, assuming it's critical if the whole batch fails.
+		// Alternatively, one could iterate through batchElems and populate individual errors.
+		return results, fmt.Errorf("RPC batch call failed: %w", err)
+	}
+
+	for i, elem := range batchElems {
+		if results[i].Error != nil { // Error already set due to unknown type
+			continue
+		}
+		if elem.Error != nil {
+			results[i].Error = fmt.Errorf("failed to fetch %s for %s (wallet %s): %w",
+				requests[i].TokenSymbol, requests[i].TokenAddress, requests[i].WalletAddress, elem.Error)
+			continue
+		}
+
+		switch requests[i].Type {
+		case entity.NativeBalanceRequest:
+			if result, ok := elem.Result.(**hexutil.Big); ok && result != nil && *result != nil {
+				results[i].Balance = (*big.Int)(*result)
+			} else {
+				results[i].Error = fmt.Errorf("failed to decode native balance for %s: unexpected type or nil result", requests[i].TokenSymbol)
+			}
+		case entity.TokenBalanceRequest:
+			if result, ok := elem.Result.(*hexutil.Bytes); ok && result != nil {
+				if len(*result) == 0 { // Handle empty result from eth_call as zero balance or error
+					// Some nodes might return "0x" for zero balance or if contract doesn't exist/reverts.
+					// Others might error. For simplicity, we can treat empty non-error result as 0.
+					results[i].Balance = big.NewInt(0)
+				} else {
+					var balanceVal *big.Int
+					// The result of eth_call for balanceOf is the raw bytes of the uint256.
+					// We need to convert these bytes to *big.Int.
+					// abi.Unpack works on packed arguments, for a single return value we can parse directly.
+					// Or ensure `balanceOf` output in ABI is correctly handled by Unpack.
+					// Let's try Unpack with the method name.
+					unpacked, err := parsedERC20ABI.Unpack("balanceOf", *result)
+					if err != nil {
+						results[i].Error = fmt.Errorf("failed to unpack balanceOf result for %s: %w. Raw: %s", requests[i].TokenSymbol, err, hexutil.Encode(*result))
+						continue
+					}
+					if len(unpacked) == 0 {
+						results[i].Error = fmt.Errorf("balanceOf unpack returned no data for %s", requests[i].TokenSymbol)
+						continue
+					}
+					balanceVal, ok = unpacked[0].(*big.Int)
+					if !ok {
+						results[i].Error = fmt.Errorf("failed to assert unpacked balanceOf result to *big.Int for %s. Got: %T", requests[i].TokenSymbol, unpacked[0])
+						continue
+					}
+					results[i].Balance = balanceVal
+				}
+			} else {
+				results[i].Error = fmt.Errorf("failed to decode token balance for %s: unexpected type or nil result", requests[i].TokenSymbol)
+			}
+		}
+
+		if results[i].Error == nil && results[i].Balance != nil {
+			formatted, err := utils.FormatBigInt(results[i].Balance, results[i].Decimals)
+			if err != nil {
+				results[i].Error = fmt.Errorf("failed to format balance for %s: %w", requests[i].TokenSymbol, err)
+			} else {
+				results[i].FormattedBalance = formatted
+			}
+		} else if results[i].Error == nil && results[i].Balance == nil {
+			// This case might happen if a zero balance was returned as nil or empty bytes and successfully parsed as such.
+			// Ensure zero balance is represented correctly.
+			results[i].Balance = big.NewInt(0)
+			results[i].FormattedBalance = "0"
+		}
+	}
+	return results, nil
 }
 
 // Definition returns the network definition for this client.

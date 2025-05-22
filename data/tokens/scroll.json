@@ -1,6 +1,14 @@
 [
     {
         "chainId": 534352,
+        "address": "0x5300000000000000000000000000000000000004",
+        "name": "Bridged Wrapped Ether  Scroll ",
+        "symbol": "WETH",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/32315/thumb/weth_%281%29.png?1697365181"
+    },
+    {
+        "chainId": 534352,
         "address": "0xf55bec9cafdbe8730f096aa55dad6d22d44099df",
         "name": "Bridged Tether  Scroll ",
         "symbol": "USDT",

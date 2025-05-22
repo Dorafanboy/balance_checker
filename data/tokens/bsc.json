@@ -1,6 +1,14 @@
 [
     {
         "chainId": 56,
+        "address": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "name": "Wrapped BNB",
+        "symbol": "WBNB",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/12591/thumb/binance-coin-logo.png?1696512401"
+    },
+    {
+        "chainId": 56,
         "address": "0x55d398326f99059ff775485246999027b3197955",
         "name": "Binance Bridged USDT  BNB Smart Chain ",
         "symbol": "BSC-USD",

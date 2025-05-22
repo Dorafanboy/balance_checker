@@ -1,6 +1,22 @@
 [
     {
         "chainId": 8453,
+        "address": "0x4200000000000000000000000000000000000006",
+        "name": "WETH",
+        "symbol": "WETH",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/2518/thumb/weth.png?1696503332"
+    },
+    {
+        "chainId": 8453,
+        "address": "0xca73ed1815e5915489570014e024b7EbE65dE679",
+        "name": "ODOS",
+        "symbol": "ODOS",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/2518/thumb/odos.png?1696503332"
+    },
+    {
+        "chainId": 8453,
         "address": "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca",
         "name": "Bridged USD Coin  Base ",
         "symbol": "USDBC",

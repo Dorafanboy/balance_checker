@@ -1,6 +1,14 @@
 [
     {
         "chainId": 81457,
+        "address": "0x4300000000000000000000000000000000000004",
+        "name": "WETH",
+        "symbol": "WETH",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/2518/thumb/weth.png?1696503332"
+    },
+    {
+        "chainId": 81457,
         "address": "0x51aad5867d73c479ce8c59ae9c9e4bf59d74c4c1",
         "name": "BlastrPool",
         "symbol": "BPOOL",

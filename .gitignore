@@ -30,7 +30,7 @@ go.work.sum
 docker-compose.override.yml
 
 # Compiled files
-checker
+/checker
 
 # Log files
 *.log

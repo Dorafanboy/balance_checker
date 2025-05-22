@@ -1,6 +1,14 @@
 [
     {
         "chainId": 324,
+        "address": "0xabea9132b05a70803a4e85094fd0e1800777fbef",
+        "name": "WETH",
+        "symbol": "WETH",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/2518/thumb/weth.png?1696503332"
+    },
+    {
+        "chainId": 324,
         "address": "0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4",
         "name": "zkSync Bridged USDC  zkSync ",
         "symbol": "USDC",

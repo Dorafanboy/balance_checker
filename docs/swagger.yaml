@@ -1,0 +1,317 @@
+openapi: 3.0.0
+info:
+  title: Balance Checker API
+  version: "1.0.0"
+  description: |
+    API for checking cryptocurrency wallet balances and portfolio values.
+    
+    **Note on Network Filtering:** When using network identifiers in API paths or query parameters 
+    (e.g., `networks` or `networkIdentifier`), please use short, lowercase, URL-friendly 
+    canonical IDs such as `ethereum`, `bsc`, `avalanche`, `polygon`, etc. 
+    These correspond to the primary identifiers defined in your network configuration.
+
+servers:
+  - url: http://localhost:8080 # Замените порт, если он у вас другой
+    description: Local development server
+
+components:
+  schemas:
+    TokenDetail:
+      type: object
+      properties:
+        tokenAddress:
+          type: string
+          description: Contract address of the token. Empty for native tokens.
+          example: "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7"
+        tokenSymbol:
+          type: string
+          description: Symbol of the token.
+          example: "USDT"
+        decimals:
+          type: integer
+          format: int32 # uint8 преобразуется в integer в JSON/YAML
+          description: Number of decimals the token uses.
+          example: 6
+        formattedBalance:
+          type: string
+          description: Token balance formatted as a string, considering decimals.
+          example: "123.456"
+        priceUSD:
+          type: number
+          format: double
+          description: Current price of the token in USD.
+          example: 1.0005
+        valueUSD:
+          type: number
+          format: double
+          description: Total value of the token balance in USD.
+          example: 123.5168
+
+    NetworkTokens:
+      type: object
+      properties:
+        chainId:
+          type: string
+          description: Chain ID of the network.
+          example: "43114"
+        tokens:
+          type: array
+          items:
+            $ref: "#/components/schemas/TokenDetail"
+          description: List of tokens in the network with their balances and values.
+        totalValueUSD:
+          type: number
+          format: double
+          description: Total value of all tokens in this network in USD.
+          example: 1500.75
+
+    WalletPortfolio:
+      type: object
+      properties:
+        walletAddress:
+          type: string
+          description: Address of the wallet.
+          example: "0x40C5bd2e0E8c2FC0679F2dfAe10403a712401999"
+        balancesByNetwork:
+          type: object
+          description: Token balances grouped by network name.
+          additionalProperties:
+            $ref: "#/components/schemas/NetworkTokens"
+          example:
+            "Avalanche C-Chain": {
+              "$ref": "#/components/schemas/NetworkTokens" # Пример ссылки, реальные данные будут здесь
+            }
+        totalValueUSD:
+          type: number
+          format: double
+          description: Total value of all assets in this wallet across all networks in USD.
+          example: 25000.00
+
+    PortfolioError:
+      type: object
+      properties:
+        walletAddress:
+          type: string
+          description: Wallet address related to the error.
+          example: "0x40C5bd2e0E8c2FC0679F2dfAe10403a712401999"
+        networkName:
+          type: string
+          description: Network name related to the error.
+          example: "Avalanche C-Chain"
+        chainID:
+          type: string
+          description: Chain ID related to the error.
+          example: "43114"
+        tokenSymbol:
+          type: string
+          description: Token symbol related to the error.
+          example: "AVAX"
+        tokenAddress:
+          type: string
+          description: Token contract address related to the error.
+          example: ""
+        isNative:
+          type: boolean
+          description: Indicates if the error is related to a native token.
+        operation:
+          type: string
+          description: Operation during which the error occurred.
+          example: "fetch_balance"
+        message:
+          type: string
+          description: Detailed error message.
+          example: "Failed to fetch balance due to RPC timeout"
+
+    APIPortfolioResponseData:
+      type: object
+      properties:
+        portfolios:
+          type: array
+          items:
+            $ref: "#/components/schemas/WalletPortfolio"
+        grandTotalValueUSD:
+          type: number
+          format: double
+          description: The grand total value of all portfolios in USD.
+          example: 125000.50
+
+    APIPortfolioResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/APIPortfolioResponseData"
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioError"
+          nullable: true # соответствует omitempty
+        status_message: # имя поля в JSON - status_message
+          type: string
+          description: A status message indicating the overall result.
+          example: "Portfolios retrieved successfully."
+
+    FailedWalletsResponse:
+      type: object
+      properties:
+        failed_wallets:
+          type: array
+          items:
+            type: string
+            example: "0x123...abc"
+          description: List of wallet addresses for which processing encountered errors.
+        count:
+          type: integer
+          format: int32
+          description: Number of failed wallets.
+          example: 2
+
+  # securitySchemes: {} # Если потребуется аутентификация в будущем
+
+paths:
+  /api/v1/portfolios:
+    get:
+      summary: Get all wallet portfolios
+      description: Retrieves portfolio information for all wallets configured in the system. Supports filtering by network names via query parameters.
+      tags:
+        - Portfolios
+      parameters:
+        - name: networks
+          in: query
+          description: "Список канонических идентификаторов сетей для фильтрации, разделенных запятыми (например, `ethereum,bsc,avalanche`). Если параметр опущен, будут возвращены данные по всем сетям для всех кошельков (согласно конфигурации)."
+          required: false
+          style: form # Для comma-separated строки
+          # explode: false # Оставляем закомментированным или удаляем
+          schema:
+            type: string
+            example: "ethereum,bsc,avalanche"
+      responses:
+        '200':
+          description: Successful retrieval of portfolios. May contain partial errors if some wallets/networks/tokens failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIPortfolioResponse'
+        '500':
+          description: Internal server error if a critical failure occurs during processing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error: failed to load tokens"
+
+  /api/v1/portfolios/failed:
+    get:
+      summary: Get failed wallets
+      description: Retrieves a list of wallet addresses for which processing encountered errors during the last portfolio fetch operation.
+      tags:
+        - Portfolios
+      responses:
+        '200':
+          description: A list of wallet addresses that had errors.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailedWalletsResponse'
+
+  /api/v1/portfolios/{walletAddress}:
+    get:
+      summary: Get portfolio for a single wallet
+      description: Retrieves portfolio information for a specific wallet address. Supports filtering by network names via query parameters.
+      tags:
+        - Portfolios
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          description: The address of the wallet to retrieve.
+          schema:
+            type: string
+            example: "0x40C5bd2e0E8c2FC0679F2dfAe10403a712401999"
+        - name: networks
+          in: query
+          description: "Список канонических идентификаторов сетей для фильтрации, разделенных запятыми (например, `ethereum,bsc,avalanche`). Если параметр опущен, будут возвращены данные по всем отслеживаемым сетям для данного кошелька."
+          required: false
+          style: form # Для comma-separated строки
+          # explode: false # Оставляем закомментированным или удаляем
+          schema:
+            type: string
+            example: "ethereum,bsc,avalanche"
+      responses:
+        '200':
+          description: Successful retrieval of the wallet portfolio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIPortfolioResponse'
+        '404':
+          description: Wallet not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "wallet with address 0x... not found"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error: ..."
+                    
+  /api/v1/portfolios/{walletAddress}/networks/{networkIdentifier}:
+    get:
+      summary: Get portfolio for a specific network of a single wallet
+      description: Retrieves portfolio information for a specific network of a specific wallet address.
+      tags:
+        - Portfolios
+      parameters:
+        - name: walletAddress
+          in: path
+          required: true
+          description: The address of the wallet.
+          schema:
+            type: string
+            example: "0x40C5bd2e0E8c2FC0679F2dfAe10403a712401999"
+        - name: networkIdentifier
+          in: path
+          required: true
+          description: "Канонический идентификатор сети (например, `ethereum`, `bsc`, `avalanche`)."
+          schema:
+            type: string
+            example: "avalanche" # Пример короткого канонического ID
+      responses:
+        '200':
+          description: Successful retrieval of the wallet's network-specific portfolio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIPortfolioResponse' # Ответ такой же, но data.portfolios[0].balancesByNetwork будет содержать только одну запрошенную сеть
+        '404':
+          description: Wallet or Network not found, or no data for this combination.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "wallet with address 0x... not found" # или "data not found for network..."
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error: ..."

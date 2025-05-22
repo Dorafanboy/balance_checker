@@ -11,14 +11,36 @@ logging:
   # output: "stdout" # stdout, stderr, /path/to/logfile
 
 coingecko:
-  api_key: "YOUR_COINGECKO_API_KEY" # Обязательно установите ваш API ключ
-  base_url: "https://api.coingecko.com/api/v3"
-  pro_base_url: "https://pro-api.coingecko.com/api/v3"
-  request_timeout_seconds: 10
-  max_retries: 3
+  apiKey: "" # Оставьте пустым для Public API или введите ваш Pro API ключ
+  baseURL: "https://api.coingecko.com/api/v3"
+  clientTimeoutSeconds: 10
+  vsCurrency: "usd"
+  # assetPlatformMapping: # Сопоставление ваших имен сетей с CoinGecko platform_id
+  #   "ethereum": "ethereum"
+  #   "bsc": "binance-smart-chain"
+  #   "polygon": "polygon-pos"
+  #   "arbitrum": "arbitrum-one"
+  #   "avalanche": "avalanche"
+  #   "optimism": "optimistic-ethereum"
+  #   "fantom": "fantom"
+  #   "base": "base"
+  #   "blast": "blast"
+  #   "celo": "celo"
+  #   "core": "core-dao"
+  #   "gnosis": "xdai" # Gnosis Chain (ранее xDAI)
+  #   "linea": "linea"
+  #   "manta": "manta-pacific"
+  #   "mantle": "mantle"
+  #   "metis": "metis-andromeda"
+  #   "polygon_zkevm": "polygon-zkevm"
+  #   "scroll": "scroll"
+  #   "zksync": "zksync"
+  #   "zora": "zora"
+  # cacheTTLSeconds: 300 # Раскомментируйте и настройте, если будете кешировать ответы CoinGecko
 
 performance:
-  max_parallel_goroutines: 50
+  max_parallel_goroutines: 30
+  rpc_call_timeout_seconds: 10 # ADDED: Timeout for individual RPC batch calls to nodes (in seconds)
   # http_client_timeout_seconds: 30
 
 # rpc_providers: # Удаляем эту секцию
@@ -26,24 +48,111 @@ performance:
 #   bsc: "https://bsc-dataseed1.binance.org/"
 #   polygon: "https://polygon-rpc.com/"
 
-tracked_networks:
-  - "ethereum"
-  - "bsc"
-  - "polygon"
-  - "arbitrum"
-  - "avalanche"
-  - "base"
-  - "blast"
-  - "celo"
-  - "core"
-  - "fantom"
-  - "gnosis"
-  - "linea"
-  - "manta"
-  - "mantle"
-  - "metis"
-  - "optimism"
-  - "polygon_zkevm"
-  - "scroll"
-  - "zksync"
-  - "zora"
+# networks: # ЗАКОММЕНТИРОВАНО: Новая секция для конфигурации сетей - теперь определяется файлами токенов
+#  - name: "ethereum" # Идентификатор из providers.go
+#    rpcURL: "https://ethereum-rpc.publicnode.com" # Из providers.go, можно заменить на свой
+#    dexScreenerChainId: "ethereum" # Идентификатор для DEXScreener
+#    chainID: 1
+#  - name: "bsc" # Binance Smart Chain
+#    rpcURL: "https://bsc.drpc.org"
+#    dexScreenerChainId: "bsc"
+#    chainID: 56
+#  - name: "polygon" # Polygon PoS
+#    rpcURL: "https://polygon-rpc.com/"
+#    dexScreenerChainId: "polygon"
+#    chainID: 137
+#  - name: "arbitrum" # Arbitrum One
+#    rpcURL: "https://arb1.arbitrum.io/rpc"
+#    dexScreenerChainId: "arbitrum"
+#    chainID: 42161
+#  - name: "avalanche" # Avalanche C-Chain
+#    rpcURL: "https://api.avax.network/ext/bc/C/rpc"
+#    dexScreenerChainId: "avalanche"
+#    chainID: 43114
+#  - name: "base" # Base Mainnet
+#    rpcURL: "https://mainnet.base.org"
+#    dexScreenerChainId: "base" # Уточнить, если отличается
+#    chainID: 8453
+#  - name: "optimism" # OP Mainnet
+#    rpcURL: "https://op-pokt.nodies.app"
+#    dexScreenerChainId: "optimism"
+#    chainID: 10
+#  - name: "fantom" # Fantom Opera
+#    rpcURL: "https://1rpc.io/ftm"
+#    dexScreenerChainId: "fantom"
+#    chainID: 250
+#  - name: "zksync" # zkSync Era Mainnet
+#    rpcURL: "https://mainnet.era.zksync.io"
+#    dexScreenerChainId: "zksync" # Уточнить, если отличается
+#    chainID: 324
+#  # Добавьте сюда остальные сети по аналогии, если для них есть токены и они нужны
+#  # Например:
+#  # - name: "blast"
+#  #   rpcURL: "https://blast.drpc.org"
+#  #   dexScreenerChainId: "blast"
+#  #   chainID: 81457
+#  # - name: "celo"
+#  #   rpcURL: "https://celo.drpc.org"
+#  #   dexScreenerChainId: "celo"
+#  #   chainID: 42220
+#  # - name: "core"
+#  #   rpcURL: "https://rpc.coredao.org"
+#  #   dexScreenerChainId: "core"
+#  #   chainID: 1116
+#  # - name: "gnosis"
+#  #   rpcURL: "https://gnosis.drpc.org"
+#  #   dexScreenerChainId: "gnosis"
+#  #   chainID: 100
+#  # - name: "linea"
+#  #   rpcURL: "https://rpc.linea.build"
+#  #   dexScreenerChainId: "linea"
+#  #   chainID: 59144
+#  # - name: "polygon_zkevm"
+#  #   rpcURL: "https://zkevm-rpc.com"
+#  #   dexScreenerChainId: "polygonzkevm" # Уточнить ID для DEXScreener
+#  #   chainID: 1101
+#  # - name: "scroll"
+#  #   rpcURL: "https://rpc.scroll.io"
+#  #   dexScreenerChainId: "scroll"
+#  #   chainID: 534352
+#  #
+#  # Сети, для которых файлы токенов были пусты или отсутствовали, но есть в tracked_networks:
+#  # Если хотите их активировать, создайте/наполните файлы токенов и раскомментируйте здесь:
+#  # - name: "manta" # Manta Pacific Mainnet
+#  #   rpcURL: "https://pacific-rpc.manta.network/http"
+#  #   dexScreenerChainId: "manta" # Уточнить ID для DEXScreener
+#  #   chainID: 169
+#  # - name: "mantle" # Mantle Network
+#  #   rpcURL: "https://rpc.mantle.xyz"
+#  #   dexScreenerChainId: "mantle"
+#  #   chainID: 5000
+#  # - name: "metis" # Metis Andromeda Mainnet
+#  #   rpcURL: "https://andromeda.metis.io/?owner=1088"
+#  #   dexScreenerChainId: "metis"
+#  #   chainID: 1088
+#  # - name: "zora" # Zora Mainnet
+#  #   rpcURL: "https://zora.drpc.org"
+#  #   dexScreenerChainId: "zora"
+#  #   chainID: 7777777
+
+# tracked_networks: # Эту секцию можно закомментировать или удалить, если Provider будет брать активные сети только из секции "networks"
+#  - "ethereum"
+#  - "bsc"
+#  - "polygon"
+#  - "arbitrum"
+#  - "avalanche"
+#  - "base"
+#  - "blast"
+#  - "celo"
+#  - "core"
+#  - "fantom"
+#  - "gnosis"
+#  - "linea"
+#  - "manta"
+#  - "mantle"
+#  - "metis"
+#  - "optimism"
+#  - "polygon_zkevm"
+#  - "scroll"
+#  - "zksync"
+#  - "zora"

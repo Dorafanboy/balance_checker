@@ -1,9 +1,17 @@
 [
     {
         "chainId": 100,
+        "address": "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d",
+        "name": "XDAI",
+        "symbol": "XDAI",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/11062/thumb/Identity-Primary-DarkBG.png?1696511004"
+    },
+    {
+        "chainId": 100,
         "address": "0x4b1e2c2762667331bc91648052f646d1b0d35984",
-        "name": "EURA",
-        "symbol": "EURA",
+        "name": "agEUR",
+        "symbol": "agEUR",
         "decimals": 18,
         "logoURI": "https://assets.coingecko.com/coins/images/19479/thumb/agEUR-4.png?1710726218"
     }

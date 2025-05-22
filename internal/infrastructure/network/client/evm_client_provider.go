@@ -7,6 +7,7 @@ import (
 
 	"balance_checker/internal/app/port"
 	"balance_checker/internal/domain/entity"
+	"balance_checker/internal/infrastructure/configloader"
 )
 
 const (
@@ -15,26 +16,28 @@ const (
 
 // evmClientProvider implements the port.BlockchainClientProvider interface.
 type evmClientProvider struct {
-	clients     map[string]port.BlockchainClient
-	mu          sync.Mutex
-	loggerInfo  func(msg string, args ...any)
-	loggerError func(msg string, args ...any)
+	clients           map[string]port.BlockchainClient
+	mu                sync.Mutex
+	loggerInfo        func(msg string, args ...any)
+	loggerError       func(msg string, args ...any)
+	connectionTimeout time.Duration
+	rpcCallTimeout    time.Duration
 	// Можно также добавить поле для httpClient, если он будет глобально настраиваться для всех клиентов
 	// httpClient *http.Client
-	connectionTimeout time.Duration
 }
 
 // NewEVMClientProvider creates a new EVMClientProvider.
 func NewEVMClientProvider(
+	cfg *configloader.Config,
 	loggerInfo func(msg string, args ...any),
 	loggerError func(msg string, args ...any),
-	// connectionTimeout time.Duration, // Można dodać, jeśli chcemy konfigurować z zewnątrz
 ) port.BlockchainClientProvider {
 	return &evmClientProvider{
 		clients:           make(map[string]port.BlockchainClient),
 		loggerInfo:        loggerInfo,
 		loggerError:       loggerError,
-		connectionTimeout: defaultProviderConnectionTimeout, // Używamy domyślnego lub przekazanego
+		connectionTimeout: defaultProviderConnectionTimeout, // This might also come from config if needed
+		rpcCallTimeout:    time.Duration(cfg.Performance.RPCCallTimeoutSeconds) * time.Second,
 	}
 }
 
@@ -58,7 +61,7 @@ func (p *evmClientProvider) GetClient(netDef entity.NetworkDefinition) (port.Blo
 	// Для NewEVMClient, который мы видели, httpClient не используется напрямую в DialContext,
 	// но может быть полезен, если бы мы использовали NewClientWithOpts.
 	// Пока передадим nil.
-	newClient, err := NewEVMClient(netDef, nil, p.connectionTimeout)
+	newClient, err := NewEVMClient(netDef, nil, p.connectionTimeout, p.rpcCallTimeout)
 	if err != nil {
 		p.loggerError("Failed to create EVM client", "network", netDef.Name, "error", err)
 		return nil, fmt.Errorf("failed to create EVM client for %s: %w", netDef.Name, err)

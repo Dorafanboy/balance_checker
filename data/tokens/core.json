@@ -1,6 +1,14 @@
 [
     {
         "chainId": 1116,
+        "address": "0x40375c92d9faf44d2f9db9bd9ba41a3317a2404f",
+        "name": "Wrapped CORE",
+        "symbol": "WCORE",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/29276/thumb/wcore.png?1696528228"
+    },
+    {
+        "chainId": 1116,
         "address": "0xa4151b2b3e269645181dccf2d426ce75fcbdeca9",
         "name": "Bridged USDC  Core ",
         "symbol": "USDC",

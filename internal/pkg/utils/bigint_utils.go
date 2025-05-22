@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
 )
@@ -67,4 +68,42 @@ func FormatBigInt(amount *big.Int, decimals uint8) (string, error) {
 	}
 
 	return formattedStr, nil
+}
+
+// CalculateValueUSD рассчитывает стоимость токенов в USD на основе их количества,
+// количества десятичных знаков и цены за один токен.
+func CalculateValueUSD(amount *big.Int, decimals uint8, priceUSD float64) (float64, error) {
+	if amount == nil {
+		return 0.0, fmt.Errorf("amount is nil")
+	}
+
+	if priceUSD == 0.0 || amount.Sign() == 0 {
+		return 0.0, nil
+	}
+
+	amountFloat := new(big.Float).SetInt(amount)
+	powerOfTen := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
+	divisor := new(big.Float).SetInt(powerOfTen)
+
+	if divisor.Sign() == 0 { // Проверка, чтобы избежать деления на ноль, если decimals очень большие.
+		return 0.0, fmt.Errorf("divisor is zero, likely due to very large decimals value")
+	}
+
+	tokenValueFloat := new(big.Float).Quo(amountFloat, divisor)
+
+	tokenValueF64, accuracy := tokenValueFloat.Float64()
+
+	// Проверяем точность. math.IsInf и math.IsNaN также покрывают случаи потери точности,
+	// но явная проверка accuracy может быть полезна для отладки.
+	if accuracy != big.Exact && !(accuracy == big.Below || accuracy == big.Above) { // Редко, но возможно для очень специфичных чисел
+		// Можно логировать или вернуть ошибку, если требуется строгая точность.
+		// Для денежных расчетов обычно достаточно Float64, если числа не астрономические.
+	}
+
+	if math.IsInf(tokenValueF64, 0) || math.IsNaN(tokenValueF64) {
+		return 0.0, fmt.Errorf("token value is Inf or NaN after conversion: %f from %s", tokenValueF64, tokenValueFloat.String())
+	}
+
+	finalValueUSD := tokenValueF64 * priceUSD
+	return finalValueUSD, nil
 }

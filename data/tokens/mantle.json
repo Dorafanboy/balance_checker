@@ -1,1 +1,10 @@
-[]
+[
+    {
+        "chainId": 5000,
+        "address": "0xdeaddeaddeaddeaddeaddeaddeaddeaddead1111",
+        "name": "Wrapped Ether  Mantle Bridge ",
+        "symbol": "WETH",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/31013/thumb/wrapped-eth-mantle-bridge.png?1696529850"
+    }
+]

@@ -2,6 +2,8 @@ package networkdefinition
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"balance_checker/internal/app/port"
 	"balance_checker/internal/domain/entity"
@@ -17,204 +19,244 @@ type NetworkDefinitionProvider struct {
 // Predefined network definitions
 var ( //nolint:gochecknoglobals // Global for definitions
 	Ethereum = entity.NetworkDefinition{
-		ChainID:          1,
-		Name:             "Ethereum Mainnet",
-		Identifier:       "ethereum",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://ethereum-rpc.publicnode.com",
-		FallbackRPCURLs:  []string{"https://rpc.ankr.com/eth", "https://ethereum.publicnode.com"},
-		BlockExplorerURL: "https://etherscan.io",
+		ChainID:                   1,
+		Name:                      "Ethereum Mainnet",
+		Identifier:                "ethereum",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://ethereum-rpc.publicnode.com",
+		FallbackRPCURLs:           []string{"https://rpc.ankr.com/eth", "https://ethereum.publicnode.com"},
+		BlockExplorerURL:          "https://etherscan.io",
+		DEXScreenerChainID:        "ethereum",
+		WrappedNativeTokenAddress: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
 	}
 	BSC = entity.NetworkDefinition{
-		ChainID:          56,
-		Name:             "BNB Smart Chain",
-		Identifier:       "bsc",
-		NativeSymbol:     "BNB",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://bsc.drpc.org",
-		FallbackRPCURLs:  []string{"https://bsc-dataseed2.binance.org/", "https://bsc.publicnode.com"},
-		BlockExplorerURL: "https://bscscan.com",
+		ChainID:                   56,
+		Name:                      "BNB Smart Chain",
+		Identifier:                "bsc",
+		NativeSymbol:              "BNB",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://1rpc.io/bnb",
+		FallbackRPCURLs:           []string{"https://bsc-dataseed2.binance.org/", "https://bsc.publicnode.com"},
+		BlockExplorerURL:          "https://bscscan.com",
+		DEXScreenerChainID:        "bsc",
+		WrappedNativeTokenAddress: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", // WBNB
 	}
 	Polygon = entity.NetworkDefinition{
-		ChainID:          137,
-		Name:             "Polygon PoS",
-		Identifier:       "polygon",
-		NativeSymbol:     "MATIC",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://polygon-rpc.com/",
-		FallbackRPCURLs:  []string{"https://rpc.ankr.com/polygon", "https://polygon.publicnode.com"},
-		BlockExplorerURL: "https://polygonscan.com",
+		ChainID:                   137,
+		Name:                      "Polygon PoS",
+		Identifier:                "polygon",
+		NativeSymbol:              "MATIC",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://polygon-rpc.com/",
+		FallbackRPCURLs:           []string{"https://rpc.ankr.com/polygon", "https://polygon.publicnode.com"},
+		BlockExplorerURL:          "https://polygonscan.com",
+		DEXScreenerChainID:        "polygon",
+		WrappedNativeTokenAddress: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // WMATIC
 	}
 	Arbitrum = entity.NetworkDefinition{
-		ChainID:          42161,
-		Name:             "Arbitrum One",
-		Identifier:       "arbitrum",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://arb1.arbitrum.io/rpc",
-		FallbackRPCURLs:  []string{"https://arbitrum.llamarpc.com", "https://arbitrum.publicnode.com"},
-		BlockExplorerURL: "https://arbiscan.io",
+		ChainID:                   42161,
+		Name:                      "Arbitrum One",
+		Identifier:                "arbitrum",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://arb1.arbitrum.io/rpc",
+		FallbackRPCURLs:           []string{"https://arbitrum.llamarpc.com", "https://arbitrum.publicnode.com"},
+		BlockExplorerURL:          "https://arbiscan.io",
+		DEXScreenerChainID:        "arbitrum",
+		WrappedNativeTokenAddress: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // WETH on Arbitrum
 	}
 	Avalanche = entity.NetworkDefinition{
-		ChainID:          43114,
-		Name:             "Avalanche C-Chain",
-		Identifier:       "avalanche",
-		NativeSymbol:     "AVAX",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://api.avax.network/ext/bc/C/rpc",
-		FallbackRPCURLs:  []string{"https://avalanche.public-rpc.com", "https://rpc.ankr.com/avalanche"},
-		BlockExplorerURL: "https://snowtrace.io",
+		ChainID:                   43114,
+		Name:                      "Avalanche C-Chain",
+		Identifier:                "avalanche",
+		NativeSymbol:              "AVAX",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://api.avax.network/ext/bc/C/rpc",
+		FallbackRPCURLs:           []string{"https://avalanche.public-rpc.com", "https://rpc.ankr.com/avalanche"},
+		BlockExplorerURL:          "https://snowtrace.io",
+		DEXScreenerChainID:        "avalanche",
+		WrappedNativeTokenAddress: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", // WAVAX
 	}
 	Base = entity.NetworkDefinition{
-		ChainID:          8453,
-		Name:             "Base Mainnet",
-		Identifier:       "base",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://mainnet.base.org",
-		FallbackRPCURLs:  []string{"https://base.publicnode.com", "https://base.llamarpc.com"},
-		BlockExplorerURL: "https://basescan.org",
+		ChainID:                   8453,
+		Name:                      "Base Mainnet",
+		Identifier:                "base",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://1rpc.io/base",
+		FallbackRPCURLs:           []string{"https://base.publicnode.com", "https://base.llamarpc.com"},
+		BlockExplorerURL:          "https://basescan.org",
+		DEXScreenerChainID:        "base",
+		WrappedNativeTokenAddress: "0x4200000000000000000000000000000000000006", // WETH on Base
 	}
 	Blast = entity.NetworkDefinition{
-		ChainID:          81457,
-		Name:             "Blast Mainnet",
-		Identifier:       "blast",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://blast.drpc.org",
-		FallbackRPCURLs:  []string{"https://blast.blockpi.network/v1/rpc/public", "https://blastl2-mainnet.public.blastapi.io"},
-		BlockExplorerURL: "https://blastscan.io",
+		ChainID:                   81457,
+		Name:                      "Blast Mainnet",
+		Identifier:                "blast",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://rpc.ankr.com/blast",
+		FallbackRPCURLs:           []string{"https://blast.blockpi.network/v1/rpc/public", "https://blastl2-mainnet.public.blastapi.io"},
+		BlockExplorerURL:          "https://blastscan.io",
+		DEXScreenerChainID:        "blast",                                      // From config comments
+		WrappedNativeTokenAddress: "0x4300000000000000000000000000000000000004", // WETH on Blast (проверьте этот адрес, может отличаться)
 	}
 	Celo = entity.NetworkDefinition{
-		ChainID:          42220,
-		Name:             "Celo Mainnet",
-		Identifier:       "celo",
-		NativeSymbol:     "CELO",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://celo.drpc.org",
-		FallbackRPCURLs:  []string{"https://rpc.ankr.com/celo"},
-		BlockExplorerURL: "https://celoscan.io",
+		ChainID:                   42220,
+		Name:                      "Celo Mainnet",
+		Identifier:                "celo",
+		NativeSymbol:              "CELO",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://rpc.ankr.com/celo",
+		FallbackRPCURLs:           []string{"https://rpc.ankr.com/celo"},
+		BlockExplorerURL:          "https://celoscan.io",
+		DEXScreenerChainID:        "celo",                                       // From config comments
+		WrappedNativeTokenAddress: "0x471ece3750da237f93b8e339c536989b8978a438", // CELO itself
 	}
 	Core = entity.NetworkDefinition{
-		ChainID:          1116,
-		Name:             "Core Blockchain",
-		Identifier:       "core",
-		NativeSymbol:     "CORE",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://rpc.coredao.org",
-		FallbackRPCURLs:  []string{"https://rpc.ankr.com/core_dao"},
-		BlockExplorerURL: "https://scan.coredao.org",
+		ChainID:                   1116,
+		Name:                      "Core Blockchain",
+		Identifier:                "core",
+		NativeSymbol:              "CORE",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://rpc.coredao.org",
+		FallbackRPCURLs:           []string{"https://rpc.ankr.com/core_dao"},
+		BlockExplorerURL:          "https://scan.coredao.org",
+		DEXScreenerChainID:        "core",                                       // From config comments
+		WrappedNativeTokenAddress: "0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000", // WCORE - официальный адрес пока не нашел, это плейсхолдер. НАЙДИТЕ АКТУАЛЬНЫЙ!
 	}
 	Fantom = entity.NetworkDefinition{
-		ChainID:          250,
-		Name:             "Fantom Opera",
-		Identifier:       "fantom",
-		NativeSymbol:     "FTM",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://1rpc.io/ftm",
-		FallbackRPCURLs:  []string{"https://fantom.publicnode.com", "https://rpc.ankr.com/fantom"},
-		BlockExplorerURL: "https://ftmscan.com",
+		ChainID:                   250,
+		Name:                      "Fantom Opera",
+		Identifier:                "fantom",
+		NativeSymbol:              "FTM",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://1rpc.io/ftm",
+		FallbackRPCURLs:           []string{"https://fantom.publicnode.com", "https://rpc.ankr.com/fantom"},
+		BlockExplorerURL:          "https://ftmscan.com",
+		DEXScreenerChainID:        "fantom",
+		WrappedNativeTokenAddress: "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83", // WFTM
 	}
 	Gnosis = entity.NetworkDefinition{
-		ChainID:          100,
-		Name:             "Gnosis Chain",
-		Identifier:       "gnosis",
-		NativeSymbol:     "xDAI",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://gnosis.drpc.org",
-		FallbackRPCURLs:  []string{"https://rpc.ankr.com/gnosis", "https://gnosis.publicnode.com"},
-		BlockExplorerURL: "https://gnosisscan.io",
+		ChainID:                   100,
+		Name:                      "Gnosis Chain",
+		Identifier:                "gnosis",
+		NativeSymbol:              "xDAI",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://0xrpc.io/gno",
+		FallbackRPCURLs:           []string{"https://rpc.ankr.com/gnosis", "https://gnosis.publicnode.com"},
+		BlockExplorerURL:          "https://gnosisscan.io",
+		DEXScreenerChainID:        "gnosis",                                     // From config comments
+		WrappedNativeTokenAddress: "0xe91D153E0b41518A2Ce8DD3D7944Fa863463A97d", // WXDAI
 	}
 	Linea = entity.NetworkDefinition{
-		ChainID:          59144,
-		Name:             "Linea Mainnet",
-		Identifier:       "linea",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://rpc.linea.build",
-		FallbackRPCURLs:  []string{"https://linea.blockpi.network/v1/rpc/public"},
-		BlockExplorerURL: "https://lineascan.build",
+		ChainID:                   59144,
+		Name:                      "Linea Mainnet",
+		Identifier:                "linea",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://rpc.linea.build",
+		FallbackRPCURLs:           []string{"https://linea.blockpi.network/v1/rpc/public"},
+		BlockExplorerURL:          "https://lineascan.build",
+		DEXScreenerChainID:        "linea",                                      // From config comments
+		WrappedNativeTokenAddress: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f", // WETH on Linea
 	}
 	Manta = entity.NetworkDefinition{ // Manta Pacific
-		ChainID:          169,
-		Name:             "Manta Pacific Mainnet",
-		Identifier:       "manta",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://pacific-rpc.manta.network/http",
-		FallbackRPCURLs:  []string{},
-		BlockExplorerURL: "https://pacific-explorer.manta.network",
+		ChainID:                   169,
+		Name:                      "Manta Pacific Mainnet",
+		Identifier:                "manta",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://pacific-rpc.manta.network/http",
+		FallbackRPCURLs:           []string{},
+		BlockExplorerURL:          "https://pacific-explorer.manta.network",
+		DEXScreenerChainID:        "manta",                                      // From config comments
+		WrappedNativeTokenAddress: "0x0Dc808AdCeDb63Fc4B9Ac0A9865d50A052A0d5c5", // WETH on Manta (USDC address for WETH? Check this) - ЗАМЕНИТЬ НА АДРЕС WETH!
 	}
 	Mantle = entity.NetworkDefinition{
-		ChainID:          5000,
-		Name:             "Mantle Network",
-		Identifier:       "mantle",
-		NativeSymbol:     "MNT",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://rpc.mantle.xyz",
-		FallbackRPCURLs:  []string{},
-		BlockExplorerURL: "https://explorer.mantle.xyz",
+		ChainID:                   5000,
+		Name:                      "Mantle Network",
+		Identifier:                "mantle",
+		NativeSymbol:              "MNT",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://rpc.mantle.xyz",
+		FallbackRPCURLs:           []string{},
+		BlockExplorerURL:          "https://explorer.mantle.xyz",
+		DEXScreenerChainID:        "mantle",                                     // From config comments
+		WrappedNativeTokenAddress: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8", // WMNT (Wrapped MNT)
 	}
 	Metis = entity.NetworkDefinition{
-		ChainID:          1088,
-		Name:             "Metis Andromeda Mainnet",
-		Identifier:       "metis",
-		NativeSymbol:     "METIS",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://andromeda.metis.io/?owner=1088",
-		FallbackRPCURLs:  []string{},
-		BlockExplorerURL: "https://andromeda-explorer.metis.io",
+		ChainID:                   1088,
+		Name:                      "Metis Andromeda Mainnet",
+		Identifier:                "metis",
+		NativeSymbol:              "METIS",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://andromeda.metis.io/?owner=1088",
+		FallbackRPCURLs:           []string{},
+		BlockExplorerURL:          "https://andromeda-explorer.metis.io",
+		DEXScreenerChainID:        "metis",                                      // From config comments
+		WrappedNativeTokenAddress: "0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000", // WMetis - НАЙДИТЕ АКТУАЛЬНЫЙ!
 	}
 	Optimism = entity.NetworkDefinition{
-		ChainID:          10,
-		Name:             "OP Mainnet",
-		Identifier:       "optimism",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://op-pokt.nodies.app",
-		FallbackRPCURLs:  []string{"https://optimism.publicnode.com", "https://rpc.ankr.com/optimism"},
-		BlockExplorerURL: "https://optimistic.etherscan.io",
+		ChainID:                   10,
+		Name:                      "OP Mainnet",
+		Identifier:                "optimism",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://op-pokt.nodies.app",
+		FallbackRPCURLs:           []string{"https://optimism.publicnode.com", "https://rpc.ankr.com/optimism"},
+		BlockExplorerURL:          "https://optimistic.etherscan.io",
+		DEXScreenerChainID:        "optimism",
+		WrappedNativeTokenAddress: "0x4200000000000000000000000000000000000006", // WETH on Optimism
 	}
 	PolygonZkEVM = entity.NetworkDefinition{
-		ChainID:          1101,
-		Name:             "Polygon zkEVM",
-		Identifier:       "polygon_zkevm",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://zkevm-rpc.com",
-		FallbackRPCURLs:  []string{"https://rpc.ankr.com/polygon_zkevm"},
-		BlockExplorerURL: "https://zkevm.polygonscan.com",
+		ChainID:                   1101,
+		Name:                      "Polygon zkEVM",
+		Identifier:                "polygon_zkevm",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://zkevm-rpc.com",
+		FallbackRPCURLs:           []string{"https://rpc.ankr.com/polygon_zkevm"},
+		BlockExplorerURL:          "https://zkevm.polygonscan.com",
+		DEXScreenerChainID:        "polygonzkevm",                               // From config comments, needs verification
+		WrappedNativeTokenAddress: "0x4F9A0e7FD2Bf6067db6994CF12E4495Df938E6e9", // WETH on Polygon zkEVM
 	}
 	Scroll = entity.NetworkDefinition{
-		ChainID:          534352,
-		Name:             "Scroll",
-		Identifier:       "scroll",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://rpc.scroll.io",
-		FallbackRPCURLs:  []string{"https://scroll.blockpi.network/v1/rpc/public"},
-		BlockExplorerURL: "https://scrollscan.com",
+		ChainID:                   534352,
+		Name:                      "Scroll",
+		Identifier:                "scroll",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://rpc.scroll.io",
+		FallbackRPCURLs:           []string{"https://scroll.blockpi.network/v1/rpc/public"},
+		BlockExplorerURL:          "https://scrollscan.com",
+		DEXScreenerChainID:        "scroll",                                     // From config comments
+		WrappedNativeTokenAddress: "0x5300000000000000000000000000000000000004", // WETH on Scroll
 	}
 	ZkSync = entity.NetworkDefinition{ // zkSync Era
-		ChainID:          324,
-		Name:             "zkSync Era Mainnet",
-		Identifier:       "zksync",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://mainnet.era.zksync.io",
-		FallbackRPCURLs:  []string{},
-		BlockExplorerURL: "https://explorer.zksync.io",
+		ChainID:                   324,
+		Name:                      "zkSync Era Mainnet",
+		Identifier:                "zksync",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://mainnet.era.zksync.io",
+		FallbackRPCURLs:           []string{},
+		BlockExplorerURL:          "https://explorer.zksync.io",
+		DEXScreenerChainID:        "zksync",
+		WrappedNativeTokenAddress: "0x5AEa5775959fBC2557Cc8789bC1bf90A239D9a91", // WETH on zkSync Era
 	}
 	Zora = entity.NetworkDefinition{
-		ChainID:          7777777,
-		Name:             "Zora Mainnet",
-		Identifier:       "zora",
-		NativeSymbol:     "ETH",
-		Decimals:         18,
-		PrimaryRPCURL:    "https://zora.drpc.org",
-		FallbackRPCURLs:  []string{},
-		BlockExplorerURL: "https://explorer.zora.energy",
+		ChainID:                   7777777,
+		Name:                      "Zora Mainnet",
+		Identifier:                "zora",
+		NativeSymbol:              "ETH",
+		Decimals:                  18,
+		PrimaryRPCURL:             "https://zora.drpc.org",
+		FallbackRPCURLs:           []string{"https://rpc.zora.energy", "https://1rpc.io/zora"},
+		BlockExplorerURL:          "https://explorer.zora.energy",
+		DEXScreenerChainID:        "zora",                                       // From config comments
+		WrappedNativeTokenAddress: "0x4200000000000000000000000000000000000006", // WETH on Zora (стандартный адрес для многих L2)
 	}
 	/* // УДАЛЕНО ZetaChain
 	ZetaChain = entity.NetworkDefinition{
@@ -258,41 +300,52 @@ var allKnownDefinitions = map[string]entity.NetworkDefinition{
 }
 
 // NewNetworkDefinitionProvider creates a new NetworkDefinitionProvider.
-// It filters allKnownDefinitions based on the provided trackedNetworkIdentifiers from the config.
-func NewNetworkDefinitionProvider(log port.Logger, trackedNetworkIdentifiers []string) *NetworkDefinitionProvider {
+// It now scans the tokenDataDir to determine active networks based on the presence of {identifier}.json files.
+func NewNetworkDefinitionProvider(log port.Logger, tokenDataDir string) *NetworkDefinitionProvider {
 	p := &NetworkDefinitionProvider{
 		logger:            log,
-		allNetworkDefs:    allKnownDefinitions,
-		activeNetworkDefs: make([]entity.NetworkDefinition, 0, len(trackedNetworkIdentifiers)),
+		allNetworkDefs:    allKnownDefinitions, // allKnownDefinitions is a global map with all predefined networks
+		activeNetworkDefs: make([]entity.NetworkDefinition, 0),
 	}
 
-	if len(trackedNetworkIdentifiers) == 0 {
-		p.logger.Warn("No networks configured in 'tracked_networks'. Service might not be able to fetch any balances.")
+	files, err := os.ReadDir(tokenDataDir)
+	if err != nil {
+		p.logger.Error(fmt.Sprintf("Failed to read token data directory: %s", tokenDataDir), "error", err)
+		// Возвращаем пустой провайдер, если не можем прочитать директорию, ошибки будут дальше при попытке получить сети
 		return p
 	}
 
-	configuredIdentifiers := make(map[string]struct{}) // For quick lookup and duplicate check
-	for _, id := range trackedNetworkIdentifiers {
-		if _, exists := configuredIdentifiers[id]; exists {
-			p.logger.Warn(fmt.Sprintf("Network identifier '%s' is duplicated in config, will be processed once.", id))
-			continue
-		}
-		configuredIdentifiers[id] = struct{}{}
+	activeIdentifiers := make(map[string]struct{}) // Для избежания дубликатов, если вдруг будут не .json файлы с теми же именами
 
-		def, ok := p.allNetworkDefs[id]
-		if !ok {
-			p.logger.Warn(fmt.Sprintf("No network definition found for configured network identifier: '%s'. Skipping.", id))
+	for _, file := range files {
+		if file.IsDir() || !strings.HasSuffix(strings.ToLower(file.Name()), ".json") {
+			continue // Пропускаем директории и не JSON файлы
+		}
+
+		identifier := strings.TrimSuffix(strings.ToLower(file.Name()), ".json")
+
+		if _, alreadyActive := activeIdentifiers[identifier]; alreadyActive {
+			p.logger.Warn(fmt.Sprintf("Duplicate token file or identifier detected (after .json trim and lowercasing): %s. Skipping.", identifier))
 			continue
 		}
+
+		def, ok := p.allNetworkDefs[identifier]
+		if !ok {
+			p.logger.Warn(fmt.Sprintf("Token file found for network '%s' but no corresponding hardcoded network definition exists. Skipping.", identifier))
+			continue
+		}
+
 		p.activeNetworkDefs = append(p.activeNetworkDefs, def)
+		activeIdentifiers[identifier] = struct{}{}
+		p.logger.Debug(fmt.Sprintf("Network '%s' activated due to presence of token file '%s'.", def.Name, file.Name()))
 	}
 
 	if len(p.activeNetworkDefs) == 0 {
-		p.logger.Warn("After filtering, no valid network definitions are active. Please check 'tracked_networks' in config and available definitions.")
+		p.logger.Warn("No token files found or no matching network definitions for token files in directory. No networks will be active.", "directory", tokenDataDir)
 	} else {
-		p.logger.Info(fmt.Sprintf("NetworkDefinitionProvider initialized. Active networks: %d", len(p.activeNetworkDefs)))
+		p.logger.Info(fmt.Sprintf("NetworkDefinitionProvider initialized. Active networks: %d (determined by token files)", len(p.activeNetworkDefs)))
 		for _, netDef := range p.activeNetworkDefs {
-			p.logger.Debug(fmt.Sprintf("  - Active network: %s (ID: %s, ChainID: %d)", netDef.Name, netDef.Identifier, netDef.ChainID))
+			p.logger.Debug(fmt.Sprintf("  - Active network: %s (ID: %s, ChainID: %d, DEXScreenerID: %s)", netDef.Name, netDef.Identifier, netDef.ChainID, netDef.DEXScreenerChainID))
 		}
 	}
 
@@ -334,10 +387,6 @@ func (p *NetworkDefinitionProvider) GetNetworkDefinitionByChainID(chainID uint64
 		}
 	}
 
-	// Fallback to check all known definitions if not found in active, but log a warning if found this way.
-	// This might be useful for some internal lookups but should be used cautiously.
-	// def, ok := p.allNetworkDefs[strconv.FormatUint(chainID, 10)] // Note: allNetworkDefs is keyed by Identifier.
-	// This specific fallback won't work directly with chainID unless map is keyed differently or we iterate.
 	// For now, let's iterate allKnownDefinitions if not found in active for this specific function, though it's less efficient.
 	for _, knownDef := range p.allNetworkDefs {
 		if knownDef.ChainID == chainID {

@@ -1,9 +1,17 @@
 [
     {
         "chainId": 42220,
+        "address": "0x471ece3750da237f93b8e339c536989b8978a438",
+        "name": "Celo",
+        "symbol": "CELO",
+        "decimals": 18,
+        "logoURI": "https://assets.coingecko.com/coins/images/11090/thumb/InjXBNx9_400x400.jpg?1696511031"
+    },
+    {
+        "chainId": 42220,
         "address": "0xc16b81af351ba9e64c1a069e3ab18c244a1e3049",
-        "name": "EURA",
-        "symbol": "EURA",
+        "name": "agEUR",
+        "symbol": "agEUR",
         "decimals": 18,
         "logoURI": "https://assets.coingecko.com/coins/images/19479/thumb/agEUR-4.png?1710726218"
     }

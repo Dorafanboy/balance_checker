@@ -1,0 +1,141 @@
+server:
+  port: "8080"
+  # host: "localhost" # Удалено, т.к. TrackedNetworks также удалено из ServerConfig
+
+database:
+  # dsn: "user:password@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+
+logging:
+  level: "debug" # debug, info, warn, error
+  # format: "json" # text, json
+  # output: "stdout" # stdout, stderr, /path/to/logfile
+
+coingecko:
+  apiKey: "" # Оставьте пустым для Public API или введите ваш Pro API ключ
+  baseURL: "https://api.coingecko.com/api/v3"
+  clientTimeoutSeconds: 10
+  vsCurrency: "usd"
+  assetPlatformMapping: # Сопоставление ВАШИХ ИМЕН СЕТЕЙ (ключи ниже в networks) с CoinGecko platform_id
+    "ethereum": "ethereum"
+    "bsc": "binance-smart-chain"
+    "polygon": "polygon-pos"
+    "arbitrum": "arbitrum-one"
+    "avalanche": "avalanche"
+    "optimism": "optimistic-ethereum"
+    "fantom": "fantom"
+    "base": "base"
+    "blast": "blast"
+    "celo": "celo"
+    "core": "core-dao"
+    "gnosis": "xdai" # Gnosis Chain (ранее xDAI)
+    "linea": "linea"
+    "manta": "manta-pacific"
+    "mantle": "mantle"
+    "metis": "metis-andromeda"
+    "polygon_zkevm": "polygon-zkevm"
+    "scroll": "scroll"
+    "zksync": "zksync"
+    "zora": "zora"
+  # cacheTTLSeconds: 300 # Раскомментируйте и настройте, если будете кешировать ответы CoinGecko
+
+dexScreener:
+  baseURL: "https://api.dexscreener.com/api/v1"
+  requestTimeoutMillis: 10000 # 10 секунд
+
+tokenPriceService:
+  maxTokensPerBatchRequest: 30
+  cacheTTLMinutes: 60
+  requestTimeoutMillis: 10000 # 10 секунд, наследуется от dexScreener по умолчанию, если не задано
+
+performance:
+  max_parallel_goroutines: 30
+  rpc_call_timeout_seconds: 10 # Timeout for individual RPC batch calls to nodes (in seconds)
+  # http_client_timeout_seconds: 30
+
+# rpc_providers: # Удаляем эту секцию, так как RPC URL теперь часть конфигурации networks
+
+networks: # Новая секция для конфигурации сетей
+  - name: "ethereum"
+    rpcURL: "https://eth.llamarpc.com"
+    dexScreenerChainId: "ethereum"
+    chainID: 1
+  - name: "bsc"
+    rpcURL: "https://bsc-dataseed1.binance.org/"
+    dexScreenerChainId: "bsc"
+    chainID: 56
+  - name: "polygon"
+    rpcURL: "https://polygon-rpc.com/"
+    dexScreenerChainId: "polygon"
+    chainID: 137
+  - name: "arbitrum"
+    rpcURL: "https://arb1.arbitrum.io/rpc" # Пример, замените на ваш RPC
+    dexScreenerChainId: "arbitrum"
+    chainID: 42161
+  - name: "avalanche"
+    rpcURL: "https://api.avax.network/ext/bc/C/rpc" # Пример, замените на ваш RPC
+    dexScreenerChainId: "avalanche"
+    chainID: 43114
+  - name: "base"
+    rpcURL: "https://mainnet.base.org" # Пример, замените на ваш RPC
+    dexScreenerChainId: "base"
+    chainID: 8453
+  - name: "blast"
+    rpcURL: "https://rpc.blast.io" # Пример, замените на ваш RPC
+    dexScreenerChainId: "blast"
+    chainID: 81457
+  - name: "celo"
+    rpcURL: "https://forno.celo.org" # Пример, замените на ваш RPC
+    dexScreenerChainId: "celo"
+    chainID: 42220
+  - name: "core"
+    rpcURL: "https://rpc.coredao.org" # Пример, замените на ваш RPC
+    dexScreenerChainId: "core"
+    chainID: 1116
+  - name: "fantom"
+    rpcURL: "https://rpc.ftm.tools/" # Пример, замените на ваш RPC
+    dexScreenerChainId: "fantom"
+    chainID: 250
+  - name: "gnosis"
+    rpcURL: "https://rpc.gnosischain.com" # Пример, замените на ваш RPC
+    dexScreenerChainId: "gnosischain" # ID для Gnosis в DEXScreener
+    chainID: 100
+  - name: "linea"
+    rpcURL: "https://rpc.linea.build" # Пример, замените на ваш RPC
+    dexScreenerChainId: "linea"
+    chainID: 59144
+  - name: "manta"
+    rpcURL: "https://pacific-rpc.manta.network/http" # Пример, замените на ваш RPC
+    dexScreenerChainId: "manta"
+    chainID: 169
+  - name: "mantle"
+    rpcURL: "https://rpc.mantle.xyz" # Пример, замените на ваш RPC
+    dexScreenerChainId: "mantle"
+    chainID: 5000
+  - name: "metis"
+    rpcURL: "https://andromeda.metis.io/?owner=1088" # Пример, замените на ваш RPC
+    dexScreenerChainId: "metis"
+    chainID: 1088
+  - name: "optimism"
+    rpcURL: "https://mainnet.optimism.io" # Пример, замените на ваш RPC
+    dexScreenerChainId: "optimism"
+    chainID: 10
+  - name: "polygon_zkevm"
+    rpcURL: "https://zkevm-rpc.com" # Пример, замените на ваш RPC
+    dexScreenerChainId: "polygonzkevm"
+    chainID: 1101
+  - name: "scroll"
+    rpcURL: "https://rpc.scroll.io" # Пример, замените на ваш RPC
+    dexScreenerChainId: "scroll"
+    chainID: 534352
+  - name: "zksync"
+    rpcURL: "https://mainnet.era.zksync.io" # Пример, замените на ваш RPC
+    dexScreenerChainId: "zksync"
+    chainID: 324
+  - name: "zora"
+    rpcURL: "https://rpc.zora.energy" # Пример, замените на ваш RPC
+    dexScreenerChainId: "zora"
+    chainID: 7777777
+
+# tracked_networks: # Старая секция, удалена
+#   - "ethereum"
+# ... и т.д. ... 
